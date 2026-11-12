@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#6366F1">
-    <title>Sổ Học Tập Gia Đình - 5 Bé</title>
+    <title>Sổ Học Tập Gia Đình</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -81,7 +81,7 @@
                     </div>
                     <div class="min-w-0">
                         <h1 class="text-base sm:text-xl font-extrabold text-slate-800 tracking-tight truncate">Sổ Học Tập Gia Đình</h1>
-                        <p class="hidden sm:block text-xs text-slate-500 font-semibold truncate">Đồng hành cùng 5 mầm nhỏ 🚀</p>
+                        <p class="hidden sm:block text-xs text-slate-500 font-semibold truncate">Đồng hành cùng các con 🚀</p>
                     </div>
                 </div>
 
@@ -106,9 +106,9 @@
                 </div>
             </div>
 
-            <!-- Bottom Row: Unified Responsive Kids Selector (5 bé) -->
+            <!-- Bottom Row: Unified Responsive Kids Selector -->
             <div class="border-t border-slate-100 py-2.5">
-                <div id="kidsTabContainer" class="flex lg:grid lg:grid-cols-6 gap-2 overflow-x-auto no-scrollbar snap-x-row pb-0.5">
+                <div id="kidsTabContainer" class="flex gap-2 overflow-x-auto no-scrollbar snap-x-row pb-0.5">
                     <!-- Dynamic tabs for 5 kids will be inserted here -->
                 </div>
             </div>
@@ -536,7 +536,7 @@
     <!-- FOOTER -->
     <footer class="bg-white border-t border-slate-200 py-6 mt-12">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 space-y-1">
-            <p class="font-bold text-slate-600">Gia Đình Là Tốt Nhất ❤️ Lịch Sử Học Tập 5 Con</p>
+            <p class="font-bold text-slate-600">Gia Đình Là Tốt Nhất ❤️ Lịch Sử Học Tập Của Các Con</p>
             <p>Dữ liệu lưu trữ an toàn ngay trên trình duyệt (LocalStorage)</p>
         </div>
     </footer>
@@ -547,10 +547,11 @@
     <div id="studentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
         <div class="bg-white rounded-t-3xl sm:rounded-3xl modal-box max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-slate-800 text-lg">Chỉnh Sửa Thông Tin Cá Nhân</h3>
+                <h3 id="studentModalTitle" class="font-bold text-slate-800 text-lg">Chỉnh Sửa Thông Tin Cá Nhân</h3>
                 <button onclick="closeModal('studentModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="studentForm" onsubmit="saveStudentInfo(event)" class="space-y-4">
+                <input type="hidden" id="studentModalMode">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Họ và Tên</label>
                     <input type="text" id="editName" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -579,12 +580,24 @@
                         <input type="date" id="editIdIssueDate" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Lớp (năm học hiện tại)</label>
+                        <input type="text" id="editGrade" placeholder="VD: Lớp 6B" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Trường (năm học hiện tại)</label>
+                        <input type="text" id="editSchool" placeholder="VD: THCS ..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Ảnh Đại Diện (URL hoặc tải ảnh lên)</label>
                     <input type="text" id="editAvatar" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2">
                     <input type="file" id="editAvatarFile" accept="image/*" onchange="handleImageUpload(event, 'editAvatar')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold hover:file:bg-indigo-100">
                 </div>
-                <div class="flex justify-end space-x-2 pt-2">
+                <div class="flex items-center gap-2 pt-2">
+                    <button type="button" id="studentDeleteBtn" onclick="deleteCurrentStudent()" class="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl"><i class="fa-solid fa-user-xmark mr-1"></i>Xóa hồ sơ bé</button>
+                    <span class="flex-1"></span>
                     <button type="button" onclick="closeModal('studentModal')" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Hủy</button>
                     <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md">Lưu Thông Tin</button>
                 </div>
@@ -1558,124 +1571,6 @@ function guiNhacLich() {
                 media: [
                     { id: 1, type: 'image', title: 'Thi Viết Chữ Đẹp', url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600', date: '2023-10-15' }
                 ]
-            },
-            {
-                id: 'child_3',
-                name: 'Nguyễn Quốc Bảo',
-                birthday: '2012-11-03',
-                hometown: 'Đông Nguyên, Từ Sơn, Bắc Ninh',
-                idNumber: '027212009012',
-                idIssueDate: '2024-01-20',
-                phone: '0912345673',
-                grade: 'Lớp 6B',
-                school: 'Trường THCS Lê Quý Đôn',
-                avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=300',
-                academicYears: {
-                    '2023-2024': {
-                        school: 'Trường THCS Lê Quý Đôn',
-                        grade: 'Lớp 6B',
-                        teacherName: 'Thầy Phạm Văn Nam',
-                        teacherPhone: '0977889900',
-                        evaluation: { academic: 'Giỏi', behavior: 'Tốt', reward: 'Học sinh Giỏi cấp Trường' },
-                        timetable: [
-                            { id: 1, day: 'Thu 2', session: 'sang', period: 1, subject: 'Chào cờ', time: '07:15', room: 'Sân trường', note: '' },
-                            { id: 2, day: 'Thu 2', session: 'sang', period: 2, subject: 'Toán', time: '08:05', room: 'P.6B', note: '' },
-                            { id: 3, day: 'Thu 2', session: 'sang', period: 3, subject: 'Ngữ Văn', time: '09:00', room: 'P.6B', note: '' },
-                            { id: 4, day: 'Thu 2', session: 'sang', period: 4, subject: 'Tiếng Anh', time: '09:50', room: 'P.6B', note: '' },
-                            { id: 5, day: 'Thu 3', session: 'sang', period: 1, subject: 'KHTN (Lý)', time: '07:15', room: 'Lab Lý', note: '' },
-                            { id: 6, day: 'Thu 3', session: 'sang', period: 2, subject: 'Lịch Sử & ĐL', time: '08:05', room: 'P.6B', note: '' },
-                            { id: 7, day: 'Thu 3', session: 'chieu', period: 1, subject: 'Thể Dục', time: '14:00', room: 'Sân TD', note: 'Giày thể thao' },
-                            { id: 8, day: 'Thu 3', session: 'them', period: 1, subject: 'Toán Nâng Cao', time: '17:30', room: 'Thầy Nam', note: 'Ôn Violympic' },
-                            { id: 9, day: 'Thu 5', session: 'them', period: 1, subject: 'Tiếng Anh IELTS', time: '18:00', room: 'Trung tâm', note: '' },
-                            { id: 10, day: 'Thu 7', session: 'them', period: 1, subject: 'Bóng Rổ CLB', time: '08:30', room: 'Nhà thi đấu', note: '' }
-                        ],
-                        grades: [
-                            { id: 1, subject: 'Toán Học', mid1: 9.5, final1: 10, mid2: 9.5, final2: 10 },
-                            { id: 2, subject: 'Vật Lý', mid1: 8.5, final1: 9.0, mid2: 9.0, final2: 9.0 },
-                            { id: 3, subject: 'Tiếng Anh', mid1: 9.0, final1: 9.5, mid2: 9.0, final2: 9.5 }
-                        ]
-                    }
-                },
-                achievements: [
-                    { id: 1, title: 'Huy Chương Đồng Toán Violympic', year: '2023-2024', level: 'Thành Phố', desc: 'Đạt giải ba kì thi Toán giải mạng cấp TP.' }
-                ],
-                media: [
-                    { id: 1, type: 'image', title: 'Nhận giải thưởng Toán', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600', date: '2023-12-10' }
-                ]
-            },
-            {
-                id: 'child_4',
-                name: 'Nguyễn Đức Anh',
-                birthday: '2009-03-18',
-                hometown: 'Đông Nguyên, Từ Sơn, Bắc Ninh',
-                idNumber: '027209003456',
-                idIssueDate: '2023-04-12',
-                phone: '0912345674',
-                grade: 'Lớp 9A2',
-                school: 'Trường THCS Lê Quý Đôn',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-                academicYears: {
-                    '2023-2024': {
-                        school: 'Trường THCS Lê Quý Đôn',
-                        grade: 'Lớp 9A2',
-                        teacherName: 'Cô Hoàng Thu Thảo',
-                        teacherPhone: '0911223344',
-                        evaluation: { academic: 'Giỏi', behavior: 'Tốt', reward: 'Học sinh Giỏi Cấp Quận' },
-                        timetable: [
-                            { id: 1, day: 'Thu 2', session: 'sang', period: 1, subject: 'Hóa Học', time: '07:15', room: '302', note: '' },
-                            { id: 2, day: 'Thu 3', session: 'sang', period: 2, subject: 'Toán Hình', time: '08:10', room: '302', note: '' },
-                            { id: 3, day: 'Thu 4', session: 'them', period: 1, subject: 'Ôn Thi Vào 10 - Toán', time: '18:00', room: 'Thầy Hùng', note: '' }
-                        ],
-                        grades: [
-                            { id: 1, subject: 'Toán', mid1: 8.5, final1: 9.0, mid2: 8.5, final2: 9.0 },
-                            { id: 2, subject: 'Hóa Học', mid1: 9.0, final1: 9.5, mid2: 9.5, final2: 10 },
-                            { id: 3, subject: 'Ngữ Văn', mid1: 8.0, final1: 8.5, mid2: 8.0, final2: 8.5 }
-                        ]
-                    }
-                },
-                achievements: [
-                    { id: 1, title: 'Giải Ba Hóa Học Học Sinh Giỏi', year: '2023-2024', level: 'Quận/Huyện', desc: 'Kỳ thi HSG Cấp Quận môn Hóa Học lớp 9.' }
-                ],
-                media: [
-                    { id: 1, type: 'image', title: 'Đội tuyển HSG Hóa', url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&q=80&w=600', date: '2023-11-05' }
-                ]
-            },
-            {
-                id: 'child_5',
-                name: 'Nguyễn Thảo Nhi',
-                birthday: '2007-08-25',
-                hometown: 'Đông Nguyên, Từ Sơn, Bắc Ninh',
-                idNumber: '027307007890',
-                idIssueDate: '2022-09-02',
-                phone: '0912345675',
-                grade: 'Lớp 11 Thường',
-                school: 'Trường THPT Chuyên Nguyễn Trãi',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-                academicYears: {
-                    '2023-2024': {
-                        school: 'Trường THPT Chuyên Nguyễn Trãi',
-                        grade: 'Lớp 11 Thường',
-                        teacherName: 'Thầy Vũ Minh Tuấn',
-                        teacherPhone: '0966554433',
-                        evaluation: { academic: 'Xuất sắc', behavior: 'Tốt', reward: 'Học sinh Giỏi Toàn Diện' },
-                        timetable: [
-                            { id: 1, day: 'Thu 2', session: 'sang', period: 1, subject: 'Văn Học', time: '07:15', room: '11A', note: '' },
-                            { id: 2, day: 'Thu 3', session: 'sang', period: 2, subject: 'Toán Giải Tích', time: '08:10', room: '11A', note: '' },
-                            { id: 3, day: 'Thu 6', session: 'them', period: 1, subject: 'Luyện Đề Đại Học', time: '18:30', room: 'Online', note: '' }
-                        ],
-                        grades: [
-                            { id: 1, subject: 'Ngữ Văn', mid1: 9.0, final1: 9.5, mid2: 9.0, final2: 9.5 },
-                            { id: 2, subject: 'Tiếng Anh', mid1: 9.5, final1: 9.8, mid2: 9.5, final2: 10 },
-                            { id: 3, subject: 'Toán', mid1: 8.5, final1: 9.0, mid2: 8.5, final2: 9.2 }
-                        ]
-                    }
-                },
-                achievements: [
-                    { id: 1, title: 'IELTS 7.5 Certificate', year: '2023-2024', level: 'Quốc Gia', desc: 'Chứng chỉ tiếng Anh quốc tế đạt 7.5 overall.' }
-                ],
-                media: [
-                    { id: 1, type: 'image', title: 'Sự kiện CLB Trường', url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=600', date: '2023-12-25' }
-                ]
             }
         ];
 
@@ -1778,6 +1673,7 @@ function guiNhacLich() {
             loadSyncCfg();
             loadData();
             migrateData();
+            keepFirstTwoKidsOnce();
             loadUiState();
             renderKidTabs();
             renderYearSelector();
@@ -1807,7 +1703,7 @@ function guiNhacLich() {
         }
 
         function resetDataToDefault() {
-            if(confirm('Khôi phục lại dữ liệu mẫu cho 5 bé?\n\nDữ liệu hiện có sẽ bị thay thế' + (syncConfigured() && syncCfg.auto ? ' và Google Sheet cũng bị ghi đè (Sheet vẫn giữ 1 bản liền trước).' : '.'))) {
+            if(confirm('Khôi phục lại dữ liệu mẫu (2 bé)?\n\nDữ liệu hiện có sẽ bị thay thế' + (syncConfigured() && syncCfg.auto ? ' và Google Sheet cũng bị ghi đè (Sheet vẫn giữ 1 bản liền trước).' : '.'))) {
                 studentsData = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
                 saveData();
                 renderKidTabs();
@@ -1843,7 +1739,7 @@ function guiNhacLich() {
             if (!container) return;
             const on = 'bg-indigo-600 text-white shadow-md shadow-indigo-200 border-indigo-600';
             const off = 'bg-slate-50 hover:bg-indigo-50/60 text-slate-700 border-slate-200/80 hover:border-indigo-200';
-            const base = 'flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl border transition text-left flex-shrink-0 min-w-[128px] sm:min-w-[150px] lg:min-w-0';
+            const base = 'flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl border transition text-left flex-shrink-0 min-w-[128px] sm:min-w-[160px] lg:min-w-[210px]';
 
             let html = `
                 <button onclick="showOverview()" ${isOverview ? 'data-active="1"' : ''} class="${base} ${isOverview ? on : off}">
@@ -1867,6 +1763,11 @@ function guiNhacLich() {
                         </span>
                     </button>`;
             });
+            html += `
+                <button onclick="openStudentModal(true)" title="Thêm hồ sơ bé" class="${base} justify-center border-dashed border-indigo-300 text-indigo-600 bg-white hover:bg-indigo-50 lg:min-w-[150px]">
+                    <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-user-plus text-xs"></i></span>
+                    <span class="text-xs sm:text-sm font-extrabold">Thêm bé</span>
+                </button>`;
             container.innerHTML = html;
 
             // cuộn bé đang chọn vào giữa thanh (điện thoại)
@@ -1932,34 +1833,23 @@ function guiNhacLich() {
             const dd = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0');
             document.getElementById('overviewTodayTitle').innerHTML = `<i class="fa-solid fa-sun text-amber-500"></i> Hôm nay · ${DAY_FULL[TODAY_KEY]}, ${dd}`;
 
-            // Lịch hôm nay của cả nhà, sắp theo giờ
-            const todayAll = [];
-            studentsData.forEach((s, i) => {
-                const yd = (s.academicYears || {})[CURRENT_YEAR];
-                ((yd && yd.timetable) || []).forEach(it => {
-                    if (it.day === TODAY_KEY) todayAll.push({ s, i, it, start: lessonStart(it) });
-                });
-            });
-            todayAll.sort((a, b) => a.start.localeCompare(b.start));
-            document.getElementById('overviewTodayCount').textContent = todayAll.length ? `${todayAll.length} tiết/ca` : '';
-            const todayEl = document.getElementById('overviewToday');
-            if (!todayAll.length) {
-                todayEl.innerHTML = `<div class="text-xs text-slate-400 py-2">Hôm nay chưa có lịch học nào được ghi trong năm học ${esc(CURRENT_YEAR)}.</div>`;
-            } else {
-                todayEl.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">` + todayAll.map(({ s, i, it, start }) => {
-                    const ses = SESSIONS.find(x => x.key === it.session) || SESSIONS[0];
-                    return `
-                        <button onclick="switchStudent('${s.id}','timetable')" class="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 transition text-left">
-                            <span class="text-xs font-extrabold text-slate-700 w-11 flex-shrink-0">${start === '99:99' ? '--:--' : esc(start)}</span>
-                            <span class="w-2 h-2 rounded-full ${kidAccent(i).dot} flex-shrink-0"></span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block text-xs font-extrabold text-slate-800 truncate">${esc(it.subject)}</span>
-                                <span class="block text-[11px] text-slate-500 truncate">${esc(shortName(s.name))}${it.room ? ' · ' + esc(it.room) : ''}</span>
-                            </span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ses.pill}">${ses.badge}</span>
-                        </button>`;
-                }).join('') + `</div>`;
-            }
+            // Hôm nay: gộp theo từng bé (số tiết chính khóa, số môn học thêm)
+            const sums = studentsData.map((s, i) => ({ s, i, ...todaySummary(s) }));
+            const totalLessons = sums.reduce((n, x) => n + x.main, 0), totalExtra = sums.reduce((n, x) => n + x.extra.length, 0);
+            document.getElementById('overviewTodayCount').textContent = `${totalLessons} tiết · ${totalExtra} môn học thêm`;
+            document.getElementById('overviewToday').innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">` + sums.map(({ s, i, main, sang, chieu, extra }) => `
+                <button onclick="switchStudent('${s.id}','timetable')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 transition text-left">
+                    <img src="${esc(s.avatar)}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-white" onerror="this.src='https://placehold.co/100x100'">
+                    <span class="min-w-0 flex-1">
+                        <span class="flex items-center gap-1.5 text-sm font-extrabold text-slate-800 truncate"><span class="w-2 h-2 rounded-full ${kidAccent(i).dot}"></span>${esc(shortName(s.name))}</span>
+                        <span class="block text-[11px] text-slate-500 truncate">${main ? `${main} tiết trên lớp${sang && chieu ? ` (sáng ${sang} · chiều ${chieu})` : sang ? ' (buổi sáng)' : ' (buổi chiều)'}` : 'Không có tiết trên lớp'}</span>
+                        <span class="block text-[11px] ${extra.length ? 'text-purple-700' : 'text-slate-400'} truncate">${extra.length ? `Học thêm ${extra.length} môn: ${esc(extra.join(', '))}` : 'Không học thêm'}</span>
+                    </span>
+                    <span class="flex-shrink-0 text-center">
+                        <span class="block text-lg font-black text-indigo-600 leading-none">${main}</span>
+                        <span class="block text-[10px] font-bold text-slate-400">tiết</span>
+                    </span>
+                </button>`).join('') + `</div>`;
 
             // Thẻ từng bé
             document.getElementById('overviewGrid').innerHTML = studentsData.map((s, i) => {
@@ -1999,7 +1889,7 @@ function guiNhacLich() {
                         <div class="px-4 pt-3 pb-4 mt-auto space-y-3">
                             <div>
                                 <div class="text-[11px] font-extrabold text-slate-400 uppercase mb-1.5">Hôm nay</div>
-                                <div class="flex flex-wrap gap-1.5">${todayItems.length ? chips + more : '<span class="text-xs text-slate-400">Không có lịch</span>'}</div>
+                                <div class="text-xs text-slate-600">${(() => { const t = todaySummary(s); return (t.main ? `<b>${t.main}</b> tiết trên lớp` : 'Không có tiết trên lớp') + ' · ' + (t.extra.length ? `<span class="text-purple-700">học thêm <b>${t.extra.length}</b> môn (${esc(t.extra.join(', '))})</span>` : 'không học thêm'); })()}</div>
                             </div>
                             <div class="grid grid-cols-3 gap-2">
                                 <button onclick="switchStudent('${s.id}','timetable')" class="py-2.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-xs font-bold transition"><i class="fa-solid fa-calendar-week mr-1"></i>Lịch</button>
@@ -2037,7 +1927,7 @@ function guiNhacLich() {
             let yearName = document.getElementById('newYearName').value.trim().replace(/\s*[-–\/]\s*/g, '-');
             const m = yearName.match(/^(\d{4})-(\d{4})$/);
             if (!m || Number(m[2]) !== Number(m[1]) + 1) { alert('Năm học phải có dạng 2024-2025 (năm sau = năm trước + 1).'); return; }
-            // Màn "Cả nhà": tạo cho cả 5 bé. Đang xem 1 bé: chỉ tạo cho bé đó (để ghi lại lịch sử năm cũ)
+            // Màn "Cả nhà": tạo cho tất cả các bé. Đang xem 1 bé: chỉ tạo cho bé đó (để ghi lại lịch sử năm cũ)
             (isOverview ? studentsData : [getCurrentStudent()]).forEach(student => {
                 if (!student.academicYears) student.academicYears = {};
                 if (!student.academicYears[yearName]) {
@@ -2710,15 +2600,21 @@ function guiNhacLich() {
         }
 
         // --- STUDENT PROFILE MODAL ---
-        function openStudentModal() {
-            const student = getCurrentStudent();
-            document.getElementById('editName').value = student.name || '';
-            document.getElementById('editBirthday').value = student.birthday || '';
-            document.getElementById('editPhone').value = student.phone || '';
-            document.getElementById('editHometown').value = student.hometown || '';
-            document.getElementById('editIdNumber').value = student.idNumber || '';
-            document.getElementById('editIdIssueDate').value = student.idIssueDate || '';
-            document.getElementById('editAvatar').value = student.avatar || '';
+        function openStudentModal(isNew) {
+            const st = isNew ? {} : getCurrentStudent();
+            const yd = isNew ? {} : (st.academicYears || {})[CURRENT_YEAR] || {};
+            document.getElementById('studentModalMode').value = isNew ? 'new' : 'edit';
+            document.getElementById('studentModalTitle').textContent = isNew ? 'Thêm Hồ Sơ Bé' : 'Chỉnh Sửa Thông Tin Cá Nhân';
+            document.getElementById('studentDeleteBtn').classList.toggle('hidden', !!isNew);
+            document.getElementById('editName').value = st.name || '';
+            document.getElementById('editBirthday').value = st.birthday || '';
+            document.getElementById('editPhone').value = st.phone || '';
+            document.getElementById('editHometown').value = st.hometown || '';
+            document.getElementById('editIdNumber').value = st.idNumber || '';
+            document.getElementById('editIdIssueDate').value = st.idIssueDate || '';
+            document.getElementById('editGrade').value = yd.grade || st.grade || '';
+            document.getElementById('editSchool').value = yd.school || st.school || '';
+            document.getElementById('editAvatar').value = (st.avatar && st.avatar.indexOf('placehold.co') === -1) ? st.avatar : '';
             document.getElementById('studentModal').classList.remove('hidden');
         }
 
@@ -2734,19 +2630,46 @@ function guiNhacLich() {
 
         function saveStudentInfo(e) {
             e.preventDefault();
-            const student = getCurrentStudent();
-            student.name = document.getElementById('editName').value.trim();
-            student.birthday = document.getElementById('editBirthday').value;
-            student.phone = document.getElementById('editPhone').value.trim();
-            student.hometown = document.getElementById('editHometown').value.trim();
-            student.idNumber = document.getElementById('editIdNumber').value.trim();
-            student.idIssueDate = document.getElementById('editIdIssueDate').value;
-            student.avatar = document.getElementById('editAvatar').value.trim() || 'https://placehold.co/300x300';
-
+            const isNew = document.getElementById('studentModalMode').value === 'new';
+            const v = id => document.getElementById(id).value.trim();
+            const name = v('editName');
+            if (!name) return;
+            if (studentsData.some(x => x.name.trim().toLowerCase() === name.toLowerCase() && (isNew || x.id !== currentStudentId))) {
+                alert('Đã có bé tên "' + name + '". Hãy đặt tên khác để Google Sheet phân biệt được.'); return;
+            }
+            const st = isNew ? { id: 'child_' + Date.now(), academicYears: {}, achievements: [], media: [], plans: [] } : getCurrentStudent();
+            Object.assign(st, { name, birthday: v('editBirthday'), phone: v('editPhone'), hometown: v('editHometown'),
+                idNumber: v('editIdNumber'), idIssueDate: v('editIdIssueDate'), grade: v('editGrade'), school: v('editSchool'),
+                avatar: v('editAvatar') || 'https://placehold.co/300x300?text=' + encodeURIComponent(shortName(name)) });
+            if (!st.academicYears) st.academicYears = {};
+            const yd = st.academicYears[CURRENT_YEAR] || (st.academicYears[CURRENT_YEAR] = { teacherName: '', teacherPhone: '',
+                evaluation: { academic: 'Chưa xếp loại', behavior: 'Tốt', reward: '' }, timetable: [], grades: [] });
+            yd.grade = st.grade; yd.school = st.school;
+            if (isNew) {
+                studentsData.push(st);
+                currentStudentId = st.id;
+                isOverview = false;
+                currentSelectedYear = CURRENT_YEAR;
+            }
             saveData();
-            renderKidTabs();
-            renderCurrentStudentData();
             closeModal('studentModal');
+            renderKidTabs();
+            renderYearSelector();
+            renderCurrentStudentData();
+            applyViewMode();
+            if (isNew) showToast('Đã thêm hồ sơ', name + ' · ' + (st.grade || 'chưa có lớp'));
+        }
+
+        function deleteCurrentStudent() {
+            const st = getCurrentStudent();
+            if (studentsData.length <= 1) { alert('Cần giữ lại ít nhất 1 hồ sơ.'); return; }
+            if (!confirm(`Xóa hồ sơ "${st.name}"?\n\nToàn bộ thông tin, thời khóa biểu, bảng điểm, thành tích, kế hoạch và ảnh của bé sẽ bị xóa` + (syncConfigured() ? ' (kể cả trên Google Sheet sau khi đồng bộ; Sheet vẫn giữ 1 bản sao lưu liền trước).' : '.'))) return;
+            studentsData = studentsData.filter(x => x.id !== st.id);
+            currentStudentId = studentsData[0].id;
+            saveData();
+            closeModal('studentModal');
+            showOverview();
+            showToast('Đã xóa hồ sơ', st.name);
         }
 
         // =====================================================
@@ -3546,6 +3469,24 @@ function guiNhacLich() {
                 const m = String(it.note || '').match(/^\s*(?:GV|Giáo viên)\s*:\s*(.+)$/i);
                 if (m) { it.teacher = m[1].trim(); it.note = ''; } else it.teacher = '';
             })));
+        }
+
+        function todaySummary(s) {
+            const yd = (s.academicYears || {})[CURRENT_YEAR];
+            const its = ((yd && yd.timetable) || []).filter(it => it.day === TODAY_KEY);
+            const sang = its.filter(x => x.session === 'sang').length, chieu = its.filter(x => x.session === 'chieu').length;
+            const extra = [...new Set(its.filter(x => x.session === 'them').map(x => String(x.subject || '').replace(/\s*\(học thêm\)\s*/i, '').trim()).filter(Boolean))];
+            return { main: sang + chieu, sang, chieu, extra };
+        }
+        // Theo yêu cầu: chỉ giữ 2 bé đầu. Hỏi xác nhận 1 lần trên mỗi trình duyệt, có liệt kê tên.
+        function keepFirstTwoKidsOnce() {
+            try { if (localStorage.getItem('family_keep2_v1')) return; localStorage.setItem('family_keep2_v1', '1'); } catch (e) { return; }
+            if (studentsData.length <= 2) return;
+            const keep = studentsData.slice(0, 2), drop = studentsData.slice(2);
+            if (!confirm(`Chỉ giữ hồ sơ của ${keep.map(x => x.name).join(' và ')}?\n\nSẽ xóa ${drop.length} hồ sơ: ${drop.map(x => x.name).join(', ')}\n(gồm thời khóa biểu, điểm, thành tích, kế hoạch, ảnh của các bé này).\n\nBấm Hủy nếu muốn giữ nguyên; bạn vẫn có thể xóa từng bé trong "Sửa thông tin".`)) return;
+            studentsData = keep;
+            if (!studentsData.some(x => x.id === currentStudentId)) currentStudentId = studentsData[0].id;
+            saveData();
         }
 
         // --- UTILS ---
