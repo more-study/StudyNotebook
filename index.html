@@ -94,9 +94,14 @@
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
-                    <button onclick="resetDataToDefault()" title="Khôi phục dữ liệu mẫu" class="w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200/70 transition">
+                    <button onclick="resetDataToDefault()" title="Khôi phục dữ liệu mẫu" class="w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 hidden sm:flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200/70 transition">
                         <i class="fa-solid fa-rotate-right"></i>
                         <span class="hidden sm:inline">Dữ liệu mẫu</span>
+                    </button>
+                    <button id="syncBtn" onclick="openSyncModal()" title="Đồng bộ Google Sheet" class="relative w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200/70 text-slate-500 transition">
+                        <i id="syncIcon" class="fa-solid fa-cloud"></i>
+                        <span id="syncLabel" class="hidden sm:inline">Google Sheet</span>
+                        <span id="syncDot" class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white"></span>
                     </button>
                 </div>
             </div>
@@ -216,7 +221,7 @@
         </div>
 
         <!-- SECTION TABS: thanh dưới cùng trên điện thoại, tab ngang trên PC -->
-        <div id="sectionTabs" class="fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 bg-white/95 backdrop-blur border-t border-slate-200 pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:flex md:items-center md:gap-2 md:bg-transparent md:backdrop-blur-none md:border-t-0 md:border-b md:pb-2">
+        <div id="sectionTabs" class="fixed bottom-0 inset-x-0 z-40 grid grid-cols-6 bg-white/95 backdrop-blur border-t border-slate-200 pb-[env(safe-area-inset-bottom)] md:static md:z-auto md:flex md:items-center md:gap-2 md:bg-transparent md:backdrop-blur-none md:border-t-0 md:border-b md:pb-2">
             <button id="tab-timetable" onclick="switchTab('timetable')" class="tab-btn">
                 <i class="fa-solid fa-calendar-week"></i>
                 <span class="md:hidden">Lịch học</span><span class="hidden md:inline">Thời Khóa Biểu</span>
@@ -224,6 +229,10 @@
             <button id="tab-grades" onclick="switchTab('grades')" class="tab-btn">
                 <i class="fa-solid fa-chart-line"></i>
                 <span class="md:hidden">Điểm số</span><span class="hidden md:inline">Bảng Điểm & Học Tập</span>
+            </button>
+            <button id="tab-history" onclick="switchTab('history')" class="tab-btn">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="md:hidden">Các năm</span><span class="hidden md:inline">Lịch Sử Các Năm</span>
             </button>
             <button id="tab-achievements" onclick="switchTab('achievements')" class="tab-btn">
                 <i class="fa-solid fa-award"></i>
@@ -243,16 +252,20 @@
         <section id="section-timetable" class="space-y-4">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-800">Thời Khóa Biểu Theo Tuần</h3>
+                    <h3 class="text-lg font-bold text-slate-800">Thời Khóa Biểu · <span class="cur-year-label text-indigo-600"></span></h3>
                     <p class="text-xs text-slate-500">Quản lý lịch học chính khóa (Sáng/Chiều) và lịch học thêm theo từng tiết</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openTtImport()" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition"><i class="fa-solid fa-file-import text-indigo-600"></i> Nhập TKB cả tuần</button>
                     <button id="ttCopyBtn" onclick="copyTimetableFromPrev()" class="hidden w-full sm:w-auto items-center justify-center gap-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl text-sm font-bold transition"><i class="fa-regular fa-copy"></i> Sao chép TKB từ năm trước</button>
                     <button onclick="openTimetableModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2 w-full sm:w-auto">
                         <i class="fa-solid fa-plus"></i> Thêm tiết học / Học thêm
                     </button>
                 </div>
             </div>
+
+            <!-- Thông tin trường lớp của năm đang xem -->
+            <div id="ttYearInfo"></div>
 
             <!-- Legend / Chú thích buổi học -->
             <div class="flex flex-wrap items-center gap-4 bg-white px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold">
@@ -272,7 +285,7 @@
             <!-- PC/Tablet: bảng cả tuần -->
             <div class="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full min-w-[720px] border-collapse text-left">
+                    <table class="w-full min-w-[720px] table-fixed border-collapse text-left">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-700 uppercase tracking-wider text-center">
                                 <th class="p-3 border-r border-slate-200 w-24">Buổi</th>
@@ -298,7 +311,7 @@
         <section id="section-grades" class="space-y-6 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-800">Kết Quả & Lịch Sử Học Tập</h3>
+                    <h3 class="text-lg font-bold text-slate-800">Bảng Điểm · <span class="cur-year-label text-indigo-600"></span></h3>
                     <p class="text-xs text-slate-500">Quản lý điểm số chi tiết các môn học trong năm</p>
                 </div>
                 <button onclick="openGradeModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2 w-full sm:w-auto">
@@ -311,7 +324,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 pb-4">
                     <div>
                         <h4 class="font-extrabold text-slate-800 flex items-center gap-2 text-base">
-                            <i class="fa-solid fa-id-card text-indigo-600"></i> Thông Tin & Tổng Kết Năm Học Này
+                            <i class="fa-solid fa-id-card text-indigo-600"></i> Thông Tin & Tổng Kết Năm Học <span class="cur-year-label"></span>
                         </h4>
                         <p class="text-xs text-slate-500">Trường, lớp, giáo viên chủ nhiệm và xếp loại cả năm</p>
                     </div>
@@ -410,7 +423,7 @@
                     </div>
                     <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
                         <p class="text-xs text-indigo-800 leading-relaxed font-medium">
-                            💡 <strong>Ghi chú:</strong> Điểm ĐTB HK = (Giữa kỳ + Cuối kỳ * 2) / 3. Điểm Cả Năm = (ĐTB HK1 + ĐTB HK2 * 2) / 3.
+                            💡 <strong>Ghi chú:</strong> Nhập điểm tối đa 2 chữ số thập phân (VD 9.75). Điểm ĐTB HK = (Giữa kỳ + Cuối kỳ * 2) / 3. Điểm Cả Năm = (ĐTB HK1 + ĐTB HK2 * 2) / 3.
                         </p>
                     </div>
                 </div>
@@ -441,6 +454,25 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <!-- SECTION: LỊCH SỬ CÁC NĂM HỌC -->
+        <section id="section-history" class="space-y-4 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Lịch Sử Học Tập Theo Năm</h3>
+                    <p class="text-xs text-slate-500">Trường, lớp, giáo viên và kết quả từng năm. Bấm "Xem lịch" / "Xem điểm" để mở lại thời khóa biểu, bảng điểm của năm đó.</p>
+                </div>
+                <button onclick="openAddYearModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2 w-full sm:w-auto"><i class="fa-solid fa-plus"></i> Thêm năm học</button>
+            </div>
+            <div id="historyChartBox" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                <h4 class="font-bold text-slate-700 text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-line text-indigo-500"></i> ĐTB cả năm qua các năm</h4>
+                <div class="h-44 sm:h-56 relative"><canvas id="historyChart"></canvas></div>
+            </div>
+            <div class="relative">
+                <div class="absolute left-[5px] top-3 bottom-3 w-0.5 bg-slate-200"></div>
+                <div id="historyList" class="space-y-4"></div>
             </div>
         </section>
 
@@ -491,6 +523,7 @@
                 </div>
             </div>
             <div class="notif-bar"></div>
+            <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2"><i class="fa-solid fa-envelope mr-1 text-sky-600"></i><b>Nhận email nhắc lịch kể cả khi không mở app:</b> mở file Google Sheet → menu <b>📧 Nhắc lịch</b> → <b>Bật gửi email nhắc tự động</b> (cần đã kết nối Google Sheet ở nút ☁️). Mỗi sáng còn có email tóm tắt lịch hẹn hôm nay và ngày mai.</div>
             <div id="plansTodo" class="space-y-2"></div>
             <details id="plansDoneBox" class="bg-white rounded-2xl border border-slate-200 px-4 py-3">
                 <summary class="text-xs font-extrabold text-slate-500 cursor-pointer">Đã xong / đã hoàn thành (<span id="plansDoneCount">0</span>)</summary>
@@ -600,13 +633,27 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 mb-1">Giáo Viên</label>
-                        <input type="text" id="ttNote" placeholder="Cô Lan / Thầy Nam..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="ttTeacher" placeholder="Cô Lan / Thầy Nam..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Tên Môn Học</label>
                     <input type="text" id="ttSubject" placeholder="Ví dụ: Toán, Ngữ Văn, Tiếng Anh..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Giờ bắt đầu</label>
+                        <input type="time" id="ttTime" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Phòng / Nơi học</label>
+                        <input type="text" id="ttRoom" placeholder="P.6B, Nhà thầy Dũng..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú môn học</label>
+                    <textarea id="ttNote" rows="2" placeholder="Mang compa, kiểm tra 15 phút, ôn bài 3..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                 </div>
 
                 <div class="flex justify-between items-center pt-2">
@@ -630,6 +677,7 @@
                 <button onclick="closeModal('gradeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="gradeForm" onsubmit="saveGradeItem(event)" class="space-y-4">
+                <input type="hidden" id="gradeEditId">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Tên Môn Học</label>
                     <input type="text" id="gradeSubject" placeholder="Ví dụ: Toán Học, Ngữ Văn" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -639,11 +687,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Giữa Kỳ 1</label>
-                            <input type="number" step="0.1" min="0" max="10" id="gradeMid1" placeholder="8.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="number" step="0.01" min="0" max="10" inputmode="decimal" id="gradeMid1" placeholder="8.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Cuối Kỳ 1</label>
-                            <input type="number" step="0.1" min="0" max="10" id="gradeFinal1" placeholder="9.0" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="number" step="0.01" min="0" max="10" inputmode="decimal" id="gradeFinal1" placeholder="9.75" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
                 </div>
@@ -652,13 +700,17 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Giữa Kỳ 2</label>
-                            <input type="number" step="0.1" min="0" max="10" id="gradeMid2" placeholder="9.0" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="number" step="0.01" min="0" max="10" inputmode="decimal" id="gradeMid2" placeholder="9.0" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Cuối Kỳ 2</label>
-                            <input type="number" step="0.1" min="0" max="10" id="gradeFinal2" placeholder="9.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="number" step="0.01" min="0" max="10" inputmode="decimal" id="gradeFinal2" placeholder="9.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú môn học</label>
+                    <textarea id="gradeNote" rows="2" placeholder="Cần ôn chương 3, cô nhận xét..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                 </div>
                 <div class="flex justify-end space-x-2 pt-2">
                     <button type="button" onclick="closeModal('gradeModal')" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Hủy</button>
@@ -756,6 +808,7 @@
                 <button onclick="closeModal('achievementModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="achievementForm" onsubmit="saveAchievementItem(event)" class="space-y-4">
+                <input type="hidden" id="achEditId">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Tên Giải Thưởng / Thành Tích</label>
                     <input type="text" id="achTitle" placeholder="Học sinh giỏi toàn diện, Giải Nhất Toán..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -796,6 +849,7 @@
                 <button onclick="closeModal('mediaModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="mediaForm" onsubmit="saveMediaItem(event)" class="space-y-4">
+                <input type="hidden" id="mediaEditId">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Loại Tập Tin</label>
                     <select id="mediaType" onchange="toggleMediaInputs()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -826,6 +880,525 @@
     </div>
 
     <!-- MODAL 6: PREVIEW MEDIA PHÓNG TO -->
+    <!-- MODAL: NHẬP THỜI KHÓA BIỂU CẢ TUẦN -->
+    <div id="ttImportModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl modal-box max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-file-import text-indigo-600 mr-1"></i> Nhập Thời Khóa Biểu</h3>
+                <button onclick="closeModal('ttImportModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="text-xs font-bold text-indigo-700 bg-indigo-50 rounded-xl px-3 py-2">Nhập cho: <span id="ttImportTarget"></span></div>
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-600">Chọn file (.txt / .tsv / .csv) hoặc dán nội dung bên dưới</label>
+                <input type="file" accept=".txt,.tsv,.csv,text/plain" onchange="ttImportFile(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold">
+                <textarea id="ttImportText" rows="7" oninput="previewTtImport()" placeholder="Mỗi dòng 1 tiết, các cột cách nhau bằng phím Tab (copy từ Excel/Google Sheet) hoặc dấu ;&#10;Thứ | Buổi | Tiết | Giờ | Môn | Giáo viên | Phòng / Nơi học | Ghi chú&#10;Thứ Hai	Sáng	1	07:15	Toán	Thầy Dũng		Mang compa" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                <p class="text-[11px] text-slate-400">Buổi: Sáng / Chiều / Học thêm. Tiết: số (sáng 1–5, chiều 1–4, học thêm ca 1–2). <button type="button" onclick="downloadTtTemplate()" class="text-indigo-600 font-bold underline">Tải file mẫu</button></p>
+            </div>
+            <div class="flex flex-wrap gap-4 text-xs font-bold text-slate-600">
+                <label class="flex items-center gap-1.5"><input type="radio" name="ttImportMode" value="replace" checked> Thay toàn bộ TKB năm này</label>
+                <label class="flex items-center gap-1.5"><input type="radio" name="ttImportMode" value="merge"> Thêm / ghi đè từng tiết</label>
+            </div>
+            <div id="ttImportPreview" class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 min-h-[2.5rem]">Chưa có dữ liệu.</div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal('ttImportModal')" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="button" onclick="doTtImport()" class="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md">Nhập vào thời khóa biểu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ĐỒNG BỘ GOOGLE SHEET -->
+    <div id="syncModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl modal-box max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i class="fa-solid fa-table text-emerald-600"></i> Lưu dữ liệu lên Google Sheet</h3>
+                <button onclick="closeModal('syncModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div id="syncStatus" class="text-xs font-bold rounded-xl px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-600">Chưa kết nối</div>
+
+            <details id="syncGuide" class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                <summary class="text-xs font-extrabold text-slate-700 cursor-pointer">Hướng dẫn cài đặt (làm 1 lần, khoảng 3 phút)</summary>
+                <ol class="list-decimal pl-5 mt-3 space-y-2 text-xs text-slate-600 leading-relaxed">
+                    <li>Tạo một Google Sheet mới (vào <b>sheets.new</b>), đặt tên, ví dụ "Sổ học tập gia đình".</li>
+                    <li>Trong Sheet: menu <b>Tiện ích mở rộng → Apps Script</b>. Xóa hết code mẫu, bấm nút bên dưới để sao chép mã rồi dán vào. <b>Đổi dòng <code>SECRET</code></b> thành mật khẩu riêng của bạn và bấm Lưu.
+                        <div class="mt-2"><button type="button" onclick="copyGasCode()" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg"><i class="fa-regular fa-copy mr-1"></i><span id="gasCopyLabel">Sao chép mã Apps Script</span></button></div></li>
+                    <li>Bấm <b>Triển khai → Tùy chọn triển khai mới</b>, chọn loại <b>Ứng dụng web</b>. Đặt "Thực thi bằng" = <b>Tôi</b>, "Người có quyền truy cập" = <b>Bất kỳ ai</b> (không chọn "Bất kỳ ai có tài khoản Google"), rồi Triển khai và cấp quyền khi Google hỏi.</li>
+                    <li>Sao chép <b>URL ứng dụng web</b> (kết thúc bằng <code>/exec</code>), dán vào ô bên dưới cùng mật khẩu bạn đã đặt.</li>
+                    <li>Bấm <b>Kết nối &amp; kiểm tra</b>. Từ đó dữ liệu tự lưu lên Sheet sau mỗi thay đổi.</li>
+                    <li>(Tùy chọn) Muốn nhận <b>email nhắc lịch</b>: mở lại file Sheet, vào menu <b>📧 Nhắc lịch → Bật gửi email nhắc tự động</b> và cấp quyền.</li>
+                    <li class="text-slate-500">Đã cài bản cũ? Dán lại mã mới ở bước 2, rồi <b>Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới</b> (giữ nguyên URL).</li>
+                </ol>
+            </details>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">URL ứng dụng web (…/exec)</label>
+                    <input type="url" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Mật khẩu (SECRET đã đặt trong Apps Script)</label>
+                    <input type="password" id="syncToken" autocomplete="off" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" id="syncAuto" class="w-4 h-4 rounded"> Tự động lưu lên Sheet sau mỗi thay đổi</label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button onclick="saveSyncSettings()" class="px-3 py-2.5 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md"><i class="fa-solid fa-plug mr-1"></i>Kết nối &amp; kiểm tra</button>
+                <button onclick="syncPushNow()" class="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-md"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Lưu lên Sheet</button>
+                <button onclick="syncPullNow()" class="px-3 py-2.5 text-xs font-bold bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>Tải về từ Sheet</button>
+            </div>
+            <button onclick="syncDiagnose()" class="w-full px-3 py-2 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200"><i class="fa-solid fa-stethoscope mr-1"></i>Chẩn đoán lỗi kết nối</button>
+            <pre id="syncDiag" class="hidden whitespace-pre-wrap break-words text-[11px] leading-relaxed bg-slate-900 text-slate-100 rounded-xl p-3"></pre>
+            <p class="text-[11px] text-slate-400 leading-relaxed">Các bảng trong Sheet: HocSinh, TongKetNam, ThoiKhoaBieu, BangDiem, ThanhTich, KeHoach, KyNiem. Thêm dòng mới để thêm dữ liệu; cột "Bé" phải ghi đúng họ tên đã có ở HocSinh. Google Sheet là nơi lưu chính: bạn sửa trong app hay sửa thẳng trong Sheet đều được. Sửa trong Sheet xong, mở lại app (hoặc bấm "Tải về từ Sheet") để cập nhật. Địa chỉ URL + mật khẩu chỉ lưu trên trình duyệt này.</p>
+            <div class="flex items-center justify-between pt-1 border-t">
+                <button onclick="syncDisconnect()" class="text-[11px] font-bold text-slate-400 hover:text-rose-600">Ngắt kết nối</button>
+                <button onclick="closeModal('syncModal'); resetDataToDefault()" class="text-[11px] font-bold text-slate-400 hover:text-rose-600">Khôi phục dữ liệu mẫu</button>
+            </div>
+        </div>
+    </div>
+    <script type="text/plain" id="gasCode">/**
+ * SỔ HỌC TẬP GIA ĐÌNH - Google Sheet là nơi lưu dữ liệu CHÍNH (2 chiều)
+ * Dán toàn bộ mã này vào Apps Script của file Google Sheet (Tiện ích mở rộng > Apps Script).
+ *
+ * Các bảng bên dưới là dữ liệu thật của app. Bạn sửa trực tiếp trong Sheet cũng được:
+ * app sẽ tự tải về ở lần mở sau (hoặc bấm "Tải về từ Sheet" trong app).
+ *
+ *   HocSinh       : thông tin từng bé (thêm bé mới = thêm 1 dòng)
+ *   TongKetNam    : trường, lớp, GVCN, học lực, hạnh kiểm, khen thưởng theo từng năm học
+ *   ThoiKhoaBieu  : từng tiết học / lớp học thêm
+ *   BangDiem      : điểm các môn (cột ĐTB tự tính bằng công thức, không cần nhập)
+ *   ThanhTich     : bằng khen, giải thưởng
+ *   KeHoach       : lịch hẹn, nhắc việc
+ *   KyNiem        : ảnh / video kỷ niệm (dán link)
+ *
+ * EMAIL NHẮC LỊCH: mở file Sheet > menu "📧 Nhắc lịch" > "Bật gửi email nhắc tự động" (cấp quyền 1 lần).
+ *   Google sẽ tự kiểm tra bảng KeHoach mỗi 15 phút và gửi email khi tới giờ "Nhắc trước",
+ *   kể cả khi không mở app. Đánh dấu "Đã xong" thì không gửi nữa.
+ *
+ * Cột "Bé" ở các bảng phải ghi ĐÚNG họ tên đã có trong bảng HocSinh (có danh sách chọn sẵn).
+ * Các sheet bắt đầu bằng dấu _ là sheet phụ của hệ thống (đã ẩn): ảnh tải lên, bản sao lưu.
+ */
+
+// >>> ĐỔI thành mật khẩu riêng của bạn, rồi nhập đúng mật khẩu này vào app <<<
+const SECRET = 'doi-mat-khau-nay';
+
+// >>> EMAIL NHẮC LỊCH (bảng KeHoach) <<<
+// Để trống = gửi về Gmail của chủ file Sheet. Nhiều người nhận: 'a@gmail.com, b@gmail.com'
+const EMAIL_TO = '';
+const EMAIL_DAILY_SUMMARY = true;   // mỗi sáng gửi 1 email tóm tắt lịch hẹn hôm nay + ngày mai (nếu có)
+const EMAIL_SUMMARY_HOUR = 6;       // giờ gửi email tóm tắt (theo múi giờ của file Sheet)
+
+const CHUNK = 40000;   // mỗi ô tối đa 50.000 ký tự nên chia nhỏ
+const SH = { META: '_META', IMG: '_Anh', RAW: '_SaoLuu', RAWP: '_SaoLuu_truoc',
+             HS: 'HocSinh', TK: 'TongKetNam', TKB: 'ThoiKhoaBieu', DIEM: 'BangDiem', TT: 'ThanhTich', KH: 'KeHoach', KN: 'KyNiem' };
+const DATA_TABS = [SH.HS, SH.TK, SH.TKB, SH.DIEM, SH.TT, SH.KH, SH.KN];
+
+const DAYS = [['Thu 2', 'Thứ Hai'], ['Thu 3', 'Thứ Ba'], ['Thu 4', 'Thứ Tư'], ['Thu 5', 'Thứ Năm'], ['Thu 6', 'Thứ Sáu'], ['Thu 7', 'Thứ Bảy'], ['CN', 'Chủ Nhật']];
+const SESS = [['sang', 'Sáng'], ['chieu', 'Chiều'], ['them', 'Học thêm']];
+const TYPES = [['meeting', 'Họp phụ huynh'], ['exam', 'Thi / Kiểm tra'], ['class', 'Học thêm / Lớp'], ['event', 'Sự kiện / Dã ngoại'], ['health', 'Khám / Tiêm chủng'], ['other', 'Khác']];
+const MEDIA_T = [['image', 'Ảnh'], ['video', 'Video']];
+const DONE_T = ['Chưa xong', 'Đã xong'];
+
+const HEAD = {
+  HocSinh:      ['Mã', 'Họ tên', 'Ngày sinh', 'SĐT', 'Quê quán', 'CCCD / Định danh', 'Ngày cấp', 'Lớp', 'Trường', 'Ảnh đại diện (URL)'],
+  TongKetNam:   ['Bé', 'Năm học', 'Trường', 'Lớp', 'GV chủ nhiệm', 'SĐT GVCN', 'Học lực', 'Hạnh kiểm', 'Khen thưởng'],
+  ThoiKhoaBieu: ['Bé', 'Năm học', 'Thứ', 'Buổi', 'Tiết', 'Giờ', 'Môn', 'Giáo viên', 'Phòng / Nơi học', 'Ghi chú'],
+  BangDiem:     ['Bé', 'Năm học', 'Môn', 'Giữa kỳ 1', 'Cuối kỳ 1', 'Giữa kỳ 2', 'Cuối kỳ 2', 'ĐTB HK1 (tự tính)', 'ĐTB HK2 (tự tính)', 'ĐTB cả năm (tự tính)', 'Ghi chú'],
+  ThanhTich:    ['Bé', 'Năm học', 'Cấp', 'Thành tích', 'Mô tả'],
+  KeHoach:      ['Bé', 'Nội dung', 'Loại', 'Ngày', 'Giờ', 'Nhắc trước (phút)', 'Trạng thái', 'Ghi chú'],
+  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)']
+};
+
+// ======================= WEB APP =======================
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+function doGet() { return out_({ ok: true, ping: true, version: 3, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(25000);
+    const body = JSON.parse(e.postData.contents);
+    if (body.token !== SECRET) return out_({ ok: false, error: 'Sai mật khẩu (token)' });
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 3 });
+    if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
+    if (body.action === 'load') {
+      if (!hasData_()) return out_({ ok: true, empty: true });
+      const w = [];
+      const data = buildData_(w);
+      return out_({ ok: true, savedAt: currentStamp_(), data: data, warnings: w });
+    }
+    if (body.action === 'save') {
+      const cur = hasData_() ? currentStamp_() : 0;
+      if (!body.force && cur > (Number(body.baseTs) || 0)) {
+        return out_({ ok: false, conflict: true, savedAt: cur, error: 'Google Sheet có chỉnh sửa mới hơn bản trên máy' });
+      }
+      saveAll_(body.data, body.savedAt);
+      return out_({ ok: true, savedAt: body.savedAt });
+    }
+    return out_({ ok: false, error: 'Hành động không hợp lệ' });
+  } catch (err) {
+    return out_({ ok: false, error: String(err) });
+  } finally {
+    try { lock.releaseLock(); } catch (x) {}
+  }
+}
+
+// ======================= TIỆN ÍCH =======================
+function key_(s) { return String(s === null || s === undefined ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function txt_(v) { if (v === null || v === undefined || v instanceof Date) return ''; return String(v).trim(); }
+function num_(v) { if (v === '' || v === null || v === undefined || v instanceof Date) return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; }
+function yr_(v) { return txt_(v).replace(/\s*[-–]\s*/g, '-'); }
+function p2_(n) { return ('0' + n).slice(-2); }
+function T_(v) { v = (v === null || v === undefined) ? '' : String(v); return /^[=+\-@]/.test(v) ? ' ' + v : v; }   // chặn bị hiểu thành công thức
+function S_(v) { return (v === null || v === undefined || v === '') ? '' : String(v); }   // số điểm -> chữ, VD 9.75
+function N_(v) { return (v === null || v === undefined || v === '') ? '' : v; }
+
+function iso_(v, tz) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
+  const s = txt_(v); if (!s) return '';
+  var m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+  if (m) return m[3] + '-' + p2_(m[2]) + '-' + p2_(m[1]);
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return m[1] + '-' + p2_(m[2]) + '-' + p2_(m[3]);
+  return '';
+}
+function dmy_(iso) { if (!iso) return ''; const p = String(iso).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(iso); }
+function hm_(v, tz) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz, 'HH:mm');
+  if (typeof v === 'number' && v >= 0 && v < 1) { const mi = Math.round(v * 1440); return p2_(Math.floor(mi / 60)) + ':' + p2_(mi % 60); }
+  const s = txt_(v); const m = s.match(/^(\d{1,2})\s*[:h.]\s*(\d{2})$/);
+  return m ? p2_(m[1]) + ':' + m[2] : s;
+}
+function toKey_(pairs, label, fallback) {
+  const k = key_(label);
+  for (var i = 0; i < pairs.length; i++) if (key_(pairs[i][0]) === k || key_(pairs[i][1]) === k) return pairs[i][0];
+  return fallback;
+}
+function toLabel_(pairs, key) { for (var i = 0; i < pairs.length; i++) if (pairs[i][0] === key) return pairs[i][1]; return ''; }
+function dayKey_(label) {
+  const k = key_(label);
+  var m = k.match(/^(?:thứ|thu|t)?\s*([2-7])$/); if (m) return 'Thu ' + m[1];
+  if (k === 'cn' || k === 'chủ nhật' || k === 'chu nhat') return 'CN';
+  return toKey_(DAYS, label, label ? String(label).trim() : 'Thu 2');
+}
+
+function rowsObj_(ss, name) {
+  const sh = ss.getSheetByName(name);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const vals = sh.getDataRange().getValues();
+  const head = vals[0].map(key_);
+  const out = [];
+  for (var i = 1; i < vals.length; i++) {
+    var o = {}, any = false;
+    for (var c = 0; c < head.length; c++) {
+      if (!(head[c] in o)) o[head[c]] = vals[i][c];
+      if (vals[i][c] !== '' && vals[i][c] !== null && vals[i][c] !== undefined) any = true;
+    }
+    if (any) out.push(o);
+  }
+  return out;
+}
+function g_(o, header) { const v = o[key_(header)]; return v === undefined ? '' : v; }
+
+function hasData_() {
+  const ss = SpreadsheetApp.getActive();
+  return rowsObj_(ss, SH.HS).some(function (o) { return txt_(g_(o, 'Họ tên')) !== ''; });
+}
+function metaSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  const m = ss.getSheetByName(SH.META) || ss.insertSheet(SH.META);
+  return m;
+}
+function fingerprint_() {
+  const ss = SpreadsheetApp.getActive();
+  const parts = DATA_TABS.map(function (n) { const sh = ss.getSheetByName(n); return sh ? JSON.stringify(sh.getDataRange().getValues()) : ''; });
+  const d = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, parts.join('\u0001'));
+  return d.map(function (b) { return ('0' + (b & 0xff).toString(16)).slice(-2); }).join('');
+}
+// Mốc thời gian thay đổi gần nhất của Sheet: tự phát hiện cả khi bạn sửa tay / xóa dòng trong Sheet
+function currentStamp_() {
+  const meta = metaSheet_();
+  var ts = Number(meta.getRange(1, 1).getValue()) || 0;
+  const fp = fingerprint_();
+  if (String(meta.getRange(1, 2).getValue()) !== fp) {
+    ts = Date.now();
+    meta.getRange(1, 1, 1, 2).setValues([[ts, fp]]);
+  }
+  return ts;
+}
+
+// ======================= ĐỌC: Sheet -> dữ liệu app =======================
+function buildData_(warn) {
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
+  const imgs = loadImgs_(ss);
+  const res = function (v) { const s = txt_(v); return s.indexOf('@anh:') === 0 ? (imgs[s.substring(5)] || '') : s; };
+
+  const students = [], byName = {}, used = {};
+  rowsObj_(ss, SH.HS).forEach(function (o) {
+    const name = txt_(g_(o, 'Họ tên')); if (!name) return;
+    var id = txt_(g_(o, 'Mã'));
+    if (!id || used[id]) { var n = students.length + 1; while (used['child_' + n]) n++; id = 'child_' + n; }
+    used[id] = true;
+    const s = { id: id, name: name, birthday: iso_(g_(o, 'Ngày sinh'), tz), phone: txt_(g_(o, 'SĐT')), hometown: txt_(g_(o, 'Quê quán')),
+      idNumber: txt_(g_(o, 'CCCD / Định danh')), idIssueDate: iso_(g_(o, 'Ngày cấp'), tz), grade: txt_(g_(o, 'Lớp')), school: txt_(g_(o, 'Trường')),
+      avatar: res(g_(o, 'Ảnh đại diện (URL)')), academicYears: {}, achievements: [], media: [], plans: [] };
+    students.push(s); byName[key_(name)] = s;
+  });
+
+  const kid = function (o, tab, line) {
+    const nm = txt_(g_(o, 'Bé')), s = byName[key_(nm)];
+    if (!nm) return null;   // dòng chưa điền tên bé: bỏ qua im lặng
+    if (!s) warn.push('Bỏ qua dòng ở sheet ' + tab + ' vì tên bé "' + nm + '" không có trong HocSinh');
+    return s;
+  };
+  const yearOf = function (s, y) {
+    if (!y) y = '';
+    if (!s.academicYears[y]) s.academicYears[y] = { school: s.school, grade: s.grade, teacherName: '', teacherPhone: '',
+      evaluation: { academic: 'Chưa xếp loại', behavior: 'Tốt', reward: '' }, timetable: [], grades: [] };
+    return s.academicYears[y];
+  };
+
+  rowsObj_(ss, SH.TK).forEach(function (o) {
+    const s = kid(o, SH.TK); if (!s) return; const y = yr_(g_(o, 'Năm học')); if (!y) return;
+    const yd = yearOf(s, y);
+    yd.school = txt_(g_(o, 'Trường')) || s.school; yd.grade = txt_(g_(o, 'Lớp')) || s.grade;
+    yd.teacherName = txt_(g_(o, 'GV chủ nhiệm')); yd.teacherPhone = txt_(g_(o, 'SĐT GVCN'));
+    yd.evaluation = { academic: txt_(g_(o, 'Học lực')) || 'Chưa xếp loại', behavior: txt_(g_(o, 'Hạnh kiểm')) || 'Tốt', reward: txt_(g_(o, 'Khen thưởng')) };
+  });
+  rowsObj_(ss, SH.TKB).forEach(function (o) {
+    const s = kid(o, SH.TKB); if (!s) return; const y = yr_(g_(o, 'Năm học')); if (!y) return;
+    const subject = txt_(g_(o, 'Môn')); if (!subject) return;
+    const yd = yearOf(s, y);
+    yd.timetable.push({ id: yd.timetable.length + 1, day: dayKey_(g_(o, 'Thứ')), session: toKey_(SESS, g_(o, 'Buổi'), 'sang'),
+      period: Number(g_(o, 'Tiết')) || 1, time: hm_(g_(o, 'Giờ'), tz), subject: subject, teacher: txt_(g_(o, 'Giáo viên')), room: txt_(g_(o, 'Phòng / Nơi học')), note: txt_(g_(o, 'Ghi chú')) });
+  });
+  rowsObj_(ss, SH.DIEM).forEach(function (o) {
+    const s = kid(o, SH.DIEM); if (!s) return; const y = yr_(g_(o, 'Năm học')); if (!y) return;
+    const subject = txt_(g_(o, 'Môn')); if (!subject) return;
+    const yd = yearOf(s, y);
+    yd.grades.push({ id: yd.grades.length + 1, subject: subject, mid1: num_(g_(o, 'Giữa kỳ 1')), final1: num_(g_(o, 'Cuối kỳ 1')), mid2: num_(g_(o, 'Giữa kỳ 2')), final2: num_(g_(o, 'Cuối kỳ 2')), note: txt_(g_(o, 'Ghi chú')) });
+  });
+  rowsObj_(ss, SH.TT).forEach(function (o) {
+    const s = kid(o, SH.TT); if (!s) return; const title = txt_(g_(o, 'Thành tích')); if (!title) return;
+    s.achievements.push({ id: s.achievements.length + 1, title: title, year: txt_(g_(o, 'Năm học')), level: txt_(g_(o, 'Cấp')) || 'Khác', desc: txt_(g_(o, 'Mô tả')) });
+  });
+  rowsObj_(ss, SH.KH).forEach(function (o) {
+    const s = kid(o, SH.KH); if (!s) return; const title = txt_(g_(o, 'Nội dung')); if (!title) return;
+    const d = iso_(g_(o, 'Ngày'), tz); if (!d) { warn.push('Kế hoạch "' + title + '" thiếu / sai ngày nên bị bỏ qua'); return; }
+    const done = /^(đã xong|xong|x|true|1|yes|có)$/.test(key_(g_(o, 'Trạng thái')));
+    s.plans.push({ id: s.plans.length + 1, title: title, type: toKey_(TYPES, g_(o, 'Loại'), 'other'), date: d, time: hm_(g_(o, 'Giờ'), tz) || '08:00',
+      remind: num_(g_(o, 'Nhắc trước (phút)')) || 0, note: txt_(g_(o, 'Ghi chú')), done: done, n1: false, n2: false });
+  });
+  rowsObj_(ss, SH.KN).forEach(function (o) {
+    const s = kid(o, SH.KN); if (!s) return; const title = txt_(g_(o, 'Tiêu đề')); const url = res(g_(o, 'Liên kết (URL)'));
+    if (!title && !url) return;
+    s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: url, date: iso_(g_(o, 'Ngày'), tz) });
+  });
+  return students;
+}
+
+function loadImgs_(ss) {
+  const sh = ss.getSheetByName(SH.IMG), map = {};
+  if (!sh || sh.getLastRow() < 1) return map;
+  sh.getRange(1, 1, sh.getLastRow(), 3).getValues().forEach(function (r) {
+    if (!r[0]) return; (map[r[0]] = map[r[0]] || []).push([Number(r[1]), String(r[2]).substring(1)]);
+  });
+  Object.keys(map).forEach(function (k) { map[k] = map[k].sort(function (a, b) { return a[0] - b[0]; }).map(function (x) { return x[1]; }).join(''); });
+  return map;
+}
+
+// ======================= GHI: dữ liệu app -> Sheet =======================
+function put_(ss, name, head, rows, textCols, extraRows) {
+  const sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  sh.clear();
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
+  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#E0E7FF');
+  const span = rows.length + (extraRows || 300);
+  if (sh.getMaxRows() < span + 1) sh.insertRowsAfter(sh.getMaxRows(), span + 1 - sh.getMaxRows());   // đủ dòng cho dữ liệu lớn
+  (textCols || []).forEach(function (c) { sh.getRange(2, c, span, 1).setNumberFormat('@'); });   // giữ nguyên số 0 đầu, ngày giờ dạng chữ
+  if (rows.length) sh.getRange(2, 1, rows.length, head.length).setValues(rows);
+  sh.setFrozenRows(1);
+  return sh;
+}
+function dvList_(sh, col, list, n) { sh.getRange(2, col, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(true).build()); }
+function dvKid_(ss, sh, n) { sh.getRange(2, 1, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(ss.getSheetByName(SH.HS).getRange('B2:B100'), true).setAllowInvalid(true).build()); }
+
+function writeTabs_(ss, data, imgs) {
+  const stash = function (key, val) {
+    if (typeof val === 'string' && val.indexOf('data:') === 0) { imgs.push([key, val]); return '@anh:' + key; }
+    return val || '';
+  };
+  const hs = [], tk = [], tkb = [], diem = [], tt = [], kh = [], kn = [];
+  data.forEach(function (s) {
+    const nm = T_(s.name);
+    hs.push([s.id, nm, dmy_(s.birthday), T_(s.phone), T_(s.hometown), T_(s.idNumber), dmy_(s.idIssueDate), T_(s.grade), T_(s.school), T_(stash('av-' + s.id, s.avatar))]);
+    Object.keys(s.academicYears || {}).sort().forEach(function (y) {
+      const yd = s.academicYears[y], ev = yd.evaluation || {};
+      tk.push([nm, y, T_(yd.school), T_(yd.grade), T_(yd.teacherName), T_(yd.teacherPhone), T_(ev.academic), T_(ev.behavior), T_(ev.reward)]);
+      (yd.timetable || []).forEach(function (t) { tkb.push([nm, y, toLabel_(DAYS, t.day) || t.day, toLabel_(SESS, t.session) || t.session, N_(t.period), T_(t.time), T_(t.subject), T_(t.teacher), T_(t.room), T_(t.note)]); });
+      (yd.grades || []).forEach(function (gr) { diem.push([nm, y, T_(gr.subject), S_(gr.mid1), S_(gr.final1), S_(gr.mid2), S_(gr.final2), '', '', '', T_(gr.note)]); });
+    });
+    (s.achievements || []).forEach(function (a) { tt.push([nm, T_(a.year), T_(a.level), T_(a.title), T_(a.desc)]); });
+    (s.plans || []).forEach(function (p) { kh.push([nm, T_(p.title), toLabel_(TYPES, p.type) || 'Khác', dmy_(p.date), T_(p.time), N_(p.remind), p.done ? DONE_T[1] : DONE_T[0], T_(p.note)]); });
+    (s.media || []).forEach(function (m) { kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(stash('md-' + s.id + '-' + m.id, m.url))]); });
+  });
+
+  const all = function (n) { return Array.apply(null, Array(n)).map(function (_, i) { return i + 1; }); };
+  put_(ss, SH.HS, HEAD.HocSinh, hs, all(10));
+  const kidCols = function (head, textCols, rows) { return rows; };
+  var sh;
+  sh = put_(ss, SH.TK, HEAD.TongKetNam, tk, all(9)); dvKid_(ss, sh, tk.length + 300);
+  sh = put_(ss, SH.TKB, HEAD.ThoiKhoaBieu, tkb, all(10)); dvKid_(ss, sh, tkb.length + 300);
+  dvList_(sh, 3, DAYS.map(function (d) { return d[1]; }), tkb.length + 300); dvList_(sh, 4, SESS.map(function (d) { return d[1]; }), tkb.length + 300);
+  sh = put_(ss, SH.DIEM, HEAD.BangDiem, diem, [1, 2, 3, 4, 5, 6, 7, 11]); dvKid_(ss, sh, diem.length + 300);
+  const nF = diem.length + 300, f = [];
+  const sep = /^(vi|de|fr|es|it|pt|ru|id|nl|tr|pl|cs|sk|sv|da|nb|no|fi|uk|ro|hu|el|bg|hr|sl|sr|lt|lv|et|az|kk|be)/i.test(String(ss.getSpreadsheetLocale ? ss.getSpreadsheetLocale() : '')) ? ',' : '.';
+  const V = function (c) { return 'IF(ISNUMBER(' + c + '),' + c + ',VALUE(SUBSTITUTE(SUBSTITUTE(' + c + ',",","' + sep + '"),".","' + sep + '")))'; };
+  for (var i = 0; i < nF; i++) {
+    const r = i + 2, D = 'D' + r, E = 'E' + r, F = 'F' + r, G = 'G' + r, H = 'H' + r, I = 'I' + r;
+    f.push(['=IF(OR($C' + r + '="",' + D + '="",' + E + '=""),"",IFERROR(ROUND((' + V(D) + '+' + V(E) + '*2)/3,2),"Sai số"))',
+            '=IF(OR($C' + r + '="",' + F + '="",' + G + '=""),"",IFERROR(ROUND((' + V(F) + '+' + V(G) + '*2)/3,2),"Sai số"))',
+            '=IF($C' + r + '="","",IFERROR(IF(AND(ISNUMBER(' + H + '),ISNUMBER(' + I + ')),ROUND((' + H + '+' + I + '*2)/3,2),IF(ISNUMBER(' + H + '),' + H + ',IF(ISNUMBER(' + I + '),' + I + ',""))),""))']);
+  }
+  sh.getRange(2, 8, nF, 3).setFormulas(f);
+  sh = put_(ss, SH.TT, HEAD.ThanhTich, tt, all(5)); dvKid_(ss, sh, tt.length + 300);
+  sh = put_(ss, SH.KH, HEAD.KeHoach, kh, all(8)); dvKid_(ss, sh, kh.length + 300);
+  dvList_(sh, 3, TYPES.map(function (d) { return d[1]; }), kh.length + 300); dvList_(sh, 7, DONE_T, kh.length + 300);
+  sh = put_(ss, SH.KN, HEAD.KyNiem, kn, all(5)); dvKid_(ss, sh, kn.length + 300);
+  dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), kn.length + 300);
+}
+
+function saveAll_(data, savedAt) {
+  if (!Array.isArray(data) || !data.length) throw new Error('Dữ liệu gửi lên không hợp lệ');
+  const ss = SpreadsheetApp.getActive();
+
+  // bản sao lưu thô (đã bỏ ảnh tải lên cho nhẹ), giữ 2 thế hệ
+  const slim = JSON.stringify(data, function (k, v) { return (typeof v === 'string' && v.indexOf('data:') === 0) ? '(ảnh tải lên)' : v; });
+  const raw = ss.getSheetByName(SH.RAW) || ss.insertSheet(SH.RAW);
+  if (raw.getLastRow() >= 1) {
+    const pv = ss.getSheetByName(SH.RAWP) || ss.insertSheet(SH.RAWP);
+    const old = raw.getRange(1, 1, raw.getLastRow(), 1).getValues();
+    pv.clear(); pv.getRange(1, 1, old.length, 1).setValues(old);
+  }
+  raw.clear();
+  const rows = [[savedAt]];
+  for (var i = 0; i < slim.length; i += CHUNK) rows.push(['c' + slim.substring(i, i + CHUNK)]);
+  raw.getRange(1, 1, rows.length, 1).setValues(rows);
+
+  // các bảng dữ liệu + ảnh tải lên
+  const imgs = [];
+  writeTabs_(ss, data, imgs);
+  const im = ss.getSheetByName(SH.IMG) || ss.insertSheet(SH.IMG);
+  im.clear();
+  const ir = [];
+  imgs.forEach(function (it) { for (var j = 0, k = 0; j < it[1].length; j += CHUNK, k++) ir.push([it[0], k, 'c' + it[1].substring(j, j + CHUNK)]); });
+  if (ir.length) im.getRange(1, 1, ir.length, 3).setValues(ir);
+
+  metaSheet_().getRange(1, 1, 1, 2).setValues([[savedAt, fingerprint_()]]);
+  [SH.META, SH.IMG, SH.RAW, SH.RAWP].forEach(function (n) { const s = ss.getSheetByName(n); if (s) { try { s.hideSheet(); } catch (e) {} } });
+}
+
+
+// ======================= EMAIL NHẮC LỊCH =======================
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('📧 Nhắc lịch')
+    .addItem('Bật gửi email nhắc tự động', 'caiDatGuiMail')
+    .addItem('Gửi thử 1 email', 'guiThuEmail')
+    .addItem('Kiểm tra & gửi ngay', 'guiNhacLich')
+    .addSeparator()
+    .addItem('Tắt gửi email', 'tatGuiMail')
+    .addToUi();
+}
+function emailTo_() { return EMAIL_TO || Session.getEffectiveUser().getEmail(); }
+function alert_(msg) { try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); } }
+
+function caiDatGuiMail() {
+  tatGuiMail_();
+  ScriptApp.newTrigger('guiNhacLich').timeBased().everyMinutes(15).create();
+  guiNhacLich();
+  alert_('Đã bật email nhắc lịch.\nGoogle kiểm tra bảng KeHoach mỗi 15 phút và gửi tới: ' + emailTo_());
+}
+function tatGuiMail() { tatGuiMail_(); alert_('Đã tắt gửi email nhắc lịch.'); }
+function tatGuiMail_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'guiNhacLich') ScriptApp.deleteTrigger(t); });
+}
+function guiThuEmail() {
+  MailApp.sendEmail({ to: emailTo_(), subject: '[Sổ học tập] Email thử', name: 'Sổ Học Tập Gia Đình',
+    htmlBody: '<p>Email nhắc lịch đã hoạt động ✅</p><p>Bạn sẽ nhận email khi tới giờ "Nhắc trước" của từng kế hoạch trong bảng <b>KeHoach</b>.</p>' });
+  alert_('Đã gửi email thử tới: ' + emailTo_());
+}
+
+function readPlans_(ss, tz) {
+  const out = [];
+  rowsObj_(ss, SH.KH).forEach(function (o) {
+    const title = txt_(g_(o, 'Nội dung')), d = iso_(g_(o, 'Ngày'), tz);
+    if (!title || !d) return;
+    const hm = hm_(g_(o, 'Giờ'), tz) || '08:00';
+    var t;
+    try { t = Utilities.parseDate(d + ' ' + hm, tz, 'yyyy-MM-dd HH:mm').getTime(); } catch (e) { return; }
+    out.push({ kid: txt_(g_(o, 'Bé')), title: title, type: txt_(g_(o, 'Loại')), d: d, hm: hm, t: t,
+      rem: num_(g_(o, 'Nhắc trước (phút)')) || 0, note: txt_(g_(o, 'Ghi chú')),
+      done: /^(đã xong|xong|x|true|1|yes|có)$/.test(key_(g_(o, 'Trạng thái'))) });
+  });
+  return out.sort(function (a, b) { return a.t - b.t; });
+}
+function planHtml_(p) {
+  const esc = function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  return '<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap"><b>' + esc(p.hm) + '</b> ' + esc(dmy_(p.d)) + '</td>' +
+    '<td style="padding:6px 10px;border-bottom:1px solid #eee"><b>' + esc(p.kid) + '</b>: ' + esc(p.title) +
+    (p.type ? ' <span style="color:#6366f1">(' + esc(p.type) + ')</span>' : '') +
+    (p.note ? '<br><span style="color:#64748b">' + esc(p.note) + '</span>' : '') + '</td></tr>';
+}
+function remText_(min) {
+  if (!min) return 'đến giờ';
+  if (min % 1440 === 0) return 'còn ' + (min / 1440) + ' ngày';
+  if (min % 60 === 0) return 'còn ' + (min / 60) + ' giờ';
+  return 'còn ' + min + ' phút';
+}
+
+// Chạy tự động mỗi 15 phút (sau khi bật ở menu)
+function guiNhacLich() {
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
+  const props = PropertiesService.getScriptProperties();
+  const now = Date.now(), plans = readPlans_(ss, tz);
+
+  plans.forEach(function (p) {
+    if (p.done) return;
+    const key = 'sent:' + [p.kid, p.title, p.d, p.hm, p.rem].join('|');
+    if (props.getProperty(key)) return;
+    if (now >= p.t - p.rem * 60000) {
+      if (now <= p.t + 2 * 3600000) {           // trễ quá 2 giờ thì thôi, không gửi
+        MailApp.sendEmail({ to: emailTo_(), name: 'Sổ Học Tập Gia Đình',
+          subject: '⏰ ' + p.kid + ': ' + p.title + ' – ' + p.hm + ' ' + dmy_(p.d) + ' (' + remText_(p.rem) + ')',
+          htmlBody: '<p>Nhắc lịch sắp tới:</p><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' + planHtml_(p) + '</table>' +
+                    '<p style="color:#94a3b8;font-size:12px">Đánh dấu "Đã xong" trong app hoặc bảng KeHoach để không nhận nhắc nữa.</p>' });
+      }
+      props.setProperty(key, String(now));
+    }
+  });
+
+  if (EMAIL_DAILY_SUMMARY) {
+    const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+    const tomorrow = Utilities.formatDate(new Date(now + 86400000), tz, 'yyyy-MM-dd');
+    const hour = Number(Utilities.formatDate(new Date(), tz, 'H'));
+    if (hour >= EMAIL_SUMMARY_HOUR && props.getProperty('summary') !== today) {
+      props.setProperty('summary', today);
+      const list = plans.filter(function (p) { return !p.done && (p.d === today || p.d === tomorrow); });
+      if (list.length) {
+        MailApp.sendEmail({ to: emailTo_(), name: 'Sổ Học Tập Gia Đình',
+          subject: '📅 Lịch hẹn hôm nay & ngày mai (' + list.length + ')',
+          htmlBody: '<p>Lịch hẹn của cả nhà:</p><table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' + list.map(planHtml_).join('') + '</table>' });
+      }
+    }
+  }
+
+  // dọn ghi nhớ đã gửi quá 60 ngày
+  const all = props.getProperties();
+  Object.keys(all).forEach(function (k) { if (k.indexOf('sent:') === 0 && now - Number(all[k]) > 60 * 86400000) props.deleteProperty(k); });
+}
+</script>
+
     <!-- TOAST NHẮC LỊCH -->
     <div id="toastBox" class="fixed top-3 inset-x-3 sm:left-auto sm:right-4 sm:w-96 z-[60] space-y-2 pointer-events-none"></div>
 
@@ -1122,7 +1695,7 @@
             { bar: 'from-amber-500 to-orange-500',  dot: 'bg-amber-500' },
             { bar: 'from-sky-500 to-cyan-500',      dot: 'bg-sky-500' }
         ];
-        const TAB_NAMES = ['timetable', 'grades', 'achievements', 'plans', 'gallery'];
+        const TAB_NAMES = ['timetable', 'grades', 'history', 'achievements', 'plans', 'gallery'];
 
         const TIMETABLE_SLOTS = [
             { session: 'sang', sessionLabel: 'Sáng', sessionColor: 'bg-blue-50/70 text-blue-800', period: 1, label: 'Tiết 1', defaultTime: '07:15 - 08:00' },
@@ -1134,8 +1707,8 @@
             { session: 'chieu', sessionLabel: 'Chiều', sessionColor: 'bg-amber-50/70 text-amber-800', period: 2, label: 'Tiết 2', defaultTime: '14:20 - 15:05' },
             { session: 'chieu', sessionLabel: 'Chiều', sessionColor: 'bg-amber-50/70 text-amber-800', period: 3, label: 'Tiết 3', defaultTime: '15:20 - 16:05' },
             { session: 'chieu', sessionLabel: 'Chiều', sessionColor: 'bg-amber-50/70 text-amber-800', period: 4, label: 'Tiết 4', defaultTime: '16:10 - 16:55' },
-            { session: 'them', sessionLabel: 'Học Thêm', sessionColor: 'bg-purple-50/80 text-purple-800', period: 1, label: 'Ca 1 (Tối)', defaultTime: '17:30 - 19:00' },
-            { session: 'them', sessionLabel: 'Học Thêm', sessionColor: 'bg-purple-50/80 text-purple-800', period: 2, label: 'Ca 2 (Tối)', defaultTime: '19:15 - 20:45' }
+            { session: 'them', sessionLabel: 'Học Thêm', sessionColor: 'bg-purple-50/80 text-purple-800', period: 1, label: 'Ca 1', defaultTime: '17:30 - 19:00' },
+            { session: 'them', sessionLabel: 'Học Thêm', sessionColor: 'bg-purple-50/80 text-purple-800', period: 2, label: 'Ca 2', defaultTime: '19:15 - 20:45' }
         ];
 
         // --- STATE MANAGEMENT ---
@@ -1202,12 +1775,16 @@
 
         // Init App
         window.onload = function() {
+            loadSyncCfg();
             loadData();
+            migrateData();
             loadUiState();
             renderKidTabs();
             renderYearSelector();
             renderCurrentStudentData();
             applyViewMode();
+            updateSyncUi();
+            setTimeout(initialSync, 300);
         };
 
         function loadData() {
@@ -1226,10 +1803,11 @@
 
         function saveData() {
             localStorage.setItem('family_students_data_v2', JSON.stringify(studentsData));
+            markLocalChange();
         }
 
         function resetDataToDefault() {
-            if(confirm('Khôi phục lại dữ liệu mẫu cho 5 bé?')) {
+            if(confirm('Khôi phục lại dữ liệu mẫu cho 5 bé?\n\nDữ liệu hiện có sẽ bị thay thế' + (syncConfigured() && syncCfg.auto ? ' và Google Sheet cũng bị ghi đè (Sheet vẫn giữ 1 bản liền trước).' : '.'))) {
                 studentsData = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
                 saveData();
                 renderKidTabs();
@@ -1303,6 +1881,7 @@
             isOverview = false;
             if (tab) currentTab = tab;
             renderKidTabs();
+            renderYearSelector();
             renderCurrentStudentData();
             applyViewMode();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1311,6 +1890,7 @@
         function showOverview() {
             isOverview = true;
             renderKidTabs();
+            renderYearSelector();
             applyViewMode();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1435,7 +2015,7 @@
             const select = document.getElementById('yearSelect');
             if (!select) return;
             const yearsSet = new Set([CURRENT_YEAR]);
-            studentsData.forEach(s => Object.keys(s.academicYears || {}).forEach(y => yearsSet.add(y)));
+            (isOverview ? studentsData : [getCurrentStudent()]).forEach(s => Object.keys((s && s.academicYears) || {}).forEach(y => yearsSet.add(y)));
             const years = Array.from(yearsSet).sort().reverse();
             if (!years.includes(currentSelectedYear)) currentSelectedYear = years[0];
             select.innerHTML = years.map(y => `<option value="${y}" ${y === currentSelectedYear ? 'selected' : ''}>${y}${y === CURRENT_YEAR ? ' ★' : ''}</option>`).join('');
@@ -1454,20 +2034,17 @@
 
         function saveNewAcademicYear(e) {
             e.preventDefault();
-            const yearName = document.getElementById('newYearName').value.trim();
-            if (!yearName) return;
-            // Năm học mới được tạo cho cả nhà để chuyển giữa các bé không bị lệch năm
-            studentsData.forEach(student => {
+            let yearName = document.getElementById('newYearName').value.trim().replace(/\s*[-–\/]\s*/g, '-');
+            const m = yearName.match(/^(\d{4})-(\d{4})$/);
+            if (!m || Number(m[2]) !== Number(m[1]) + 1) { alert('Năm học phải có dạng 2024-2025 (năm sau = năm trước + 1).'); return; }
+            // Màn "Cả nhà": tạo cho cả 5 bé. Đang xem 1 bé: chỉ tạo cho bé đó (để ghi lại lịch sử năm cũ)
+            (isOverview ? studentsData : [getCurrentStudent()]).forEach(student => {
                 if (!student.academicYears) student.academicYears = {};
                 if (!student.academicYears[yearName]) {
                     student.academicYears[yearName] = {
-                        school: student.school || '',
-                        grade: student.grade || '',
-                        teacherName: '',
-                        teacherPhone: '',
+                        school: student.school || '', grade: '', teacherName: '', teacherPhone: '',
                         evaluation: { academic: 'Chưa xếp loại', behavior: 'Tốt', reward: '' },
-                        timetable: [],
-                        grades: []
+                        timetable: [], grades: []
                     };
                 }
             });
@@ -1477,6 +2054,7 @@
             renderYearSelector();
             refreshView();
             closeModal('addYearModal');
+            if (!isOverview) openEvaluationModal();   // điền luôn trường, lớp, giáo viên của năm đó
         }
 
         const TAB_BASE = 'tab-btn flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 py-2 md:px-4 md:py-2 md:rounded-xl text-[10px] md:text-sm transition border-t-2 md:border-t-0';
@@ -1498,6 +2076,7 @@
                 }
             });
             if (currentTab === 'grades' && !isOverview) renderGrades();
+            if (currentTab === 'history' && !isOverview) renderHistory();
             saveUiState();
         }
 
@@ -1512,6 +2091,7 @@
 
         function renderCurrentStudentData() {
             updateHistoryNotice();
+            renderHistory();
             renderPlans();
             const student = getCurrentStudent();
             const yearData = getCurrentYearData();
@@ -1585,6 +2165,7 @@
                         <div class="min-w-0 flex-1 flex flex-col justify-center">
                             <div class="font-extrabold text-sm leading-snug">${esc(it.subject)}</div>
                             <div class="text-[11px] opacity-80 mt-0.5 flex flex-wrap gap-x-3">
+                                ${it.teacher ? `<span><i class="fa-solid fa-chalkboard-user mr-1"></i>${esc(it.teacher)}</span>` : ''}
                                 ${it.room ? `<span><i class="fa-solid fa-location-dot mr-1"></i>${esc(it.room)}</span>` : ''}
                                 ${it.note ? `<span><i class="fa-solid fa-note-sticky mr-1"></i>${esc(it.note)}</span>` : ''}
                             </div>
@@ -1612,7 +2193,7 @@
                 if (isFirstOfSession) {
                     rowHtml += `<td rowspan="${sessionCount}" class="p-2.5 border-r border-slate-200 text-center font-extrabold uppercase tracking-wide ${slot.sessionColor}">${slot.sessionLabel}</td>`;
                 }
-                rowHtml += `<td class="p-2.5 border-r border-slate-200 text-center bg-slate-50/40 font-bold text-slate-700">${slot.label}</td>`;
+                rowHtml += `<td class="p-2 border-r border-slate-200 text-center bg-slate-50/40 font-bold text-slate-700">${slot.label}<div class="text-[10px] font-semibold text-slate-400 mt-0.5 whitespace-nowrap">${slotTimeLabel(items, slot)}</div></td>`;
 
                 DAYS_KEYS.forEach(dayKey => {
                     const cellItem = items.find(i => i.day === dayKey && i.session === slot.session && Number(i.period) === slot.period);
@@ -1626,8 +2207,10 @@
                         rowHtml += `
                             <td class="p-1.5 border-r border-slate-200 align-top ${dayKey === TODAY_KEY ? 'bg-indigo-50/50' : ''}">
                                 <div onclick="openTimetableModal('${dayKey}', '${slot.session}', ${slot.period}, ${cellItem.id})" class="p-2 rounded-xl border ${badgeStyle} cursor-pointer transition shadow-2xs min-h-[54px] flex flex-col justify-center">
-                                    <div class="font-extrabold text-xs leading-snug">${cellItem.subject}</div>
-                                    ${cellItem.note ? `<div class="text-[11px] opacity-80 mt-0.5 font-semibold truncate"><i class="fa-solid fa-chalkboard-user mr-1 text-[10px]"></i>${cellItem.note}</div>` : ''}
+                                    <div class="font-extrabold text-xs leading-snug">${esc(cellItem.subject)}</div>
+                                    ${cellItem.teacher ? `<div class="text-[11px] opacity-80 mt-0.5 font-semibold truncate"><i class="fa-solid fa-chalkboard-user mr-1 text-[10px]"></i>${esc(cellItem.teacher)}</div>` : ''}
+                                    ${cellItem.room ? `<div class="text-[10px] opacity-70 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${esc(cellItem.room)}</div>` : ''}
+                                    ${cellItem.note ? `<div class="text-[10px] mt-1 px-1.5 py-0.5 rounded-md bg-white/70 text-slate-600 line-clamp-2" title="${esc(cellItem.note)}"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(cellItem.note)}</div>` : ''}
                                 </div>
                             </td>
                         `;
@@ -1659,26 +2242,26 @@
             document.getElementById('ttDay').value = day;
             document.getElementById('ttSession').value = session;
             updatePeriodOptions(period);
-
             const deleteBtn = document.getElementById('ttDeleteBtn');
             const titleEl = document.getElementById('ttModalTitle');
-
-            if (editId) {
-                const yearData = getCurrentYearData();
-                const item = (yearData.timetable || []).find(i => i.id === editId);
-                if (item) {
-                    document.getElementById('ttEditId').value = item.id;
-                    document.getElementById('ttSubject').value = item.subject || '';
-                    document.getElementById('ttNote').value = item.note || '';
-                    titleEl.innerText = 'Chỉnh Sửa Tiết Học';
-                    deleteBtn.classList.remove('hidden');
-                }
+            const yearData = getCurrentYearData();
+            const item = editId ? (yearData.timetable || []).find(i => i.id === editId) : null;
+            if (item) {
+                document.getElementById('ttEditId').value = item.id;
+                document.getElementById('ttSubject').value = item.subject || '';
+                document.getElementById('ttTeacher').value = item.teacher || '';
+                document.getElementById('ttTime').value = /^\d{2}:\d{2}$/.test(item.time || '') ? item.time : '';
+                document.getElementById('ttRoom').value = item.room || '';
+                document.getElementById('ttNote').value = item.note || '';
+                titleEl.innerText = 'Chỉnh Sửa Tiết Học';
+                deleteBtn.classList.remove('hidden');
             } else {
                 document.getElementById('ttEditId').value = '';
+                const slot = TIMETABLE_SLOTS.find(sl => sl.session === session && sl.period === Number(period));
+                document.getElementById('ttTime').value = slot ? (slotStart(yearData.timetable || [], slot) || slot.defaultTime.split(' - ')[0]) : '';
                 titleEl.innerText = 'Thêm Tiết Học / Học Thêm';
                 deleteBtn.classList.add('hidden');
             }
-
             document.getElementById('timetableModal').classList.remove('hidden');
         }
 
@@ -1686,24 +2269,17 @@
             e.preventDefault();
             const yearData = getCurrentYearData();
             if (!yearData.timetable) yearData.timetable = [];
-
             const editId = document.getElementById('ttEditId').value;
-            const day = document.getElementById('ttDay').value;
-            const session = document.getElementById('ttSession').value;
-            const period = parseInt(document.getElementById('ttPeriod').value);
-            const subject = document.getElementById('ttSubject').value.trim();
-            const note = document.getElementById('ttNote').value.trim();
-
+            const v = id => document.getElementById(id).value.trim();
+            const data = { day: v('ttDay'), session: v('ttSession'), period: parseInt(v('ttPeriod')), subject: v('ttSubject'),
+                           teacher: v('ttTeacher'), time: v('ttTime'), room: v('ttRoom'), note: v('ttNote') };
             if (editId) {
                 const idx = yearData.timetable.findIndex(i => i.id == editId);
-                if (idx !== -1) {
-                    yearData.timetable[idx] = { ...yearData.timetable[idx], day, session, period, subject, note };
-                }
+                if (idx !== -1) yearData.timetable[idx] = { ...yearData.timetable[idx], ...data };
             } else {
-                yearData.timetable = yearData.timetable.filter(i => !(i.day === day && i.session === session && Number(i.period) === period));
-                yearData.timetable.push({ id: Date.now(), day, session, period, subject, note });
+                yearData.timetable = yearData.timetable.filter(i => !(i.day === data.day && i.session === data.session && Number(i.period) === data.period));
+                yearData.timetable.push({ id: Date.now(), ...data });
             }
-
             saveData();
             renderTimetable();
             closeModal('timetableModal');
@@ -1774,9 +2350,10 @@
                 cardsHtml += `
                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <h5 class="font-extrabold text-slate-800 text-sm truncate">${esc(g.subject)}</h5>
+                            <div class="min-w-0"><h5 class="font-extrabold text-slate-800 text-sm truncate">${esc(g.subject)}</h5>${g.note ? `<div class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</div>
                             <div class="flex items-center gap-1 flex-shrink-0">
                                 <span class="text-sm font-black px-2.5 py-1 rounded-xl ${scoreClass(yearAvg)}" title="ĐTB cả năm">${yearAvg !== null ? yearAvg.toFixed(1) : '--'}</span>
+                                <button onclick="openGradeModal(${g.id})" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg" title="Sửa điểm"><i class="fa-solid fa-pen"></i></button>
                                 <button onclick="deleteGradeItem(${g.id})" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg" title="Xóa môn"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
@@ -1792,7 +2369,7 @@
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4 font-bold text-slate-800">${g.subject}</td>
+                        <td class="p-4 font-bold text-slate-800 cursor-pointer hover:text-indigo-600" onclick="openGradeModal(${g.id})" title="Bấm để sửa điểm">${esc(g.subject)} <i class="fa-solid fa-pen text-[10px] text-slate-300"></i>${g.note ? `<div class="text-[11px] font-medium text-slate-400 mt-0.5"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</td>
                         <td class="p-4 text-center text-slate-600">${g.mid1 ?? '--'}</td>
                         <td class="p-4 text-center text-slate-600">${g.final1 ?? '--'}</td>
                         <td class="p-4 text-center font-extrabold text-indigo-600 bg-indigo-50/30">${hk1 !== null ? hk1.toFixed(1) : '--'}</td>
@@ -1856,8 +2433,21 @@
             });
         }
 
-        function openGradeModal() {
+        function openGradeModal(id) {
             document.getElementById('gradeForm').reset();
+            document.getElementById('gradeEditId').value = id || '';
+            document.querySelector('#gradeModal h3').textContent = id ? 'Sửa Điểm Môn Học' : 'Thêm Điểm Môn Học';
+            if (id) {
+                const g = (getCurrentYearData().grades || []).find(x => x.id === id);
+                if (g) {
+                    document.getElementById('gradeSubject').value = g.subject;
+                    document.getElementById('gradeMid1').value = g.mid1 ?? '';
+                    document.getElementById('gradeFinal1').value = g.final1 ?? '';
+                    document.getElementById('gradeMid2').value = g.mid2 ?? '';
+                    document.getElementById('gradeFinal2').value = g.final2 ?? '';
+                    document.getElementById('gradeNote').value = g.note || '';
+                }
+            }
             document.getElementById('gradeModal').classList.remove('hidden');
         }
 
@@ -1865,20 +2455,14 @@
             e.preventDefault();
             const yearData = getCurrentYearData();
             if (!yearData.grades) yearData.grades = [];
-
+            const val = id => document.getElementById(id).value !== '' ? parseFloat(document.getElementById(id).value) : null;
             const subject = document.getElementById('gradeSubject').value.trim();
-            const mid1 = document.getElementById('gradeMid1').value !== '' ? parseFloat(document.getElementById('gradeMid1').value) : null;
-            const final1 = document.getElementById('gradeFinal1').value !== '' ? parseFloat(document.getElementById('gradeFinal1').value) : null;
-            const mid2 = document.getElementById('gradeMid2').value !== '' ? parseFloat(document.getElementById('gradeMid2').value) : null;
-            const final2 = document.getElementById('gradeFinal2').value !== '' ? parseFloat(document.getElementById('gradeFinal2').value) : null;
-
-            const existingIdx = yearData.grades.findIndex(g => g.subject.toLowerCase() === subject.toLowerCase());
-            if (existingIdx !== -1) {
-                yearData.grades[existingIdx] = { ...yearData.grades[existingIdx], subject, mid1, final1, mid2, final2 };
-            } else {
-                yearData.grades.push({ id: Date.now(), subject, mid1, final1, mid2, final2 });
-            }
-
+            const item = { subject, mid1: val('gradeMid1'), final1: val('gradeFinal1'), mid2: val('gradeMid2'), final2: val('gradeFinal2'), note: document.getElementById('gradeNote').value.trim() };
+            const editId = Number(document.getElementById('gradeEditId').value) || null;
+            let idx = editId ? yearData.grades.findIndex(g => g.id === editId) : -1;
+            if (idx === -1) idx = yearData.grades.findIndex(g => g.subject.toLowerCase() === subject.toLowerCase());
+            if (idx !== -1) yearData.grades[idx] = { ...yearData.grades[idx], ...item };
+            else yearData.grades.push({ id: Date.now(), ...item });
             saveData();
             renderCurrentStudentData();
             closeModal('gradeModal');
@@ -1900,8 +2484,9 @@
             document.getElementById('evalGradeInput').value = yearData.grade || student.grade || '';
             document.getElementById('evalTeacherName').value = yearData.teacherName || '';
             document.getElementById('evalTeacherPhone').value = yearData.teacherPhone || '';
-            document.getElementById('evalAcademicInput').value = evalData.academic || 'Giỏi';
-            document.getElementById('evalBehaviorInput').value = evalData.behavior || 'Tốt';
+            setSelectValue('evalAcademicInput', evalData.academic || 'Giỏi');
+            setSelectValue('evalBehaviorInput', evalData.behavior || 'Tốt');
+            document.querySelector('#evaluationModal h3').textContent = 'Thông tin năm học ' + currentSelectedYear;
             document.getElementById('evalRewardInput').value = evalData.reward || '';
 
             document.getElementById('evaluationModal').classList.remove('hidden');
@@ -1919,6 +2504,7 @@
                 behavior: document.getElementById('evalBehaviorInput').value,
                 reward: document.getElementById('evalRewardInput').value.trim()
             };
+            if (currentSelectedYear === CURRENT_YEAR) { const st = getCurrentStudent(); st.school = yearData.school; st.grade = yearData.grade; }
 
             saveData();
             renderKidTabs();
@@ -1938,17 +2524,25 @@
                 return;
             }
 
-            student.achievements.forEach(ach => {
+            const normY = y => String(y || '').replace(/\s*[-–]\s*/g, '-').trim() || 'Khác';
+            let lastY = null;
+            [...student.achievements].sort((a, b) => normY(b.year).localeCompare(normY(a.year))).forEach(ach => {
+                const yy = normY(ach.year);
+                if (yy !== lastY) {
+                    lastY = yy;
+                    grid.innerHTML += `<div class="col-span-full flex items-center gap-2 ${grid.innerHTML ? 'mt-2' : ''}"><span class="text-xs font-extrabold ${yy === currentSelectedYear ? 'text-indigo-600' : 'text-slate-500'} uppercase">Năm học ${esc(yy)}</span><span class="flex-1 h-px bg-slate-200"></span></div>`;
+                }
                 grid.innerHTML += `
                     <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 relative group">
-                        <button onclick="deleteAchievementItem(${ach.id})" class="absolute top-1 right-1 p-3 text-slate-300 hover:text-rose-500 transition">
+                        <button onclick="openAchievementModal(${ach.id})" class="absolute top-1 right-10 p-3 text-slate-300 hover:text-indigo-500 transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteAchievementItem(${ach.id})" class="absolute top-1 right-1 p-3 text-slate-300 hover:text-rose-500 transition" title="Xóa">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                         <div class="flex items-start space-x-3">
                             <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
                                 <i class="fa-solid fa-trophy"></i>
                             </div>
-                            <div class="pr-6">
+                            <div class="pr-14">
                                 <span class="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase mb-1">Cấp ${ach.level} • ${ach.year}</span>
                                 <h4 class="font-extrabold text-slate-800 text-sm leading-snug">${ach.title}</h4>
                             </div>
@@ -1959,8 +2553,23 @@
             });
         }
 
-        function openAchievementModal() {
+        function openAchievementModal(id) {
             document.getElementById('achievementForm').reset();
+            document.getElementById('achEditId').value = id || '';
+            document.querySelector('#achievementModal h3').textContent = id ? 'Sửa Bằng Khen / Giải Thưởng' : 'Thêm Bằng Khen / Giải Thưởng';
+            if (id) {
+                const a = (getCurrentStudent().achievements || []).find(x => x.id === id);
+                if (a) {
+                    document.getElementById('achTitle').value = a.title || '';
+                    document.getElementById('achYear').value = a.year || '';
+                    const sel = document.getElementById('achLevel');
+                    if (a.level && ![...sel.options].some(o => o.value === a.level)) sel.add(new Option(a.level, a.level));
+                    sel.value = a.level || 'Khác';
+                    document.getElementById('achDesc').value = a.desc || '';
+                }
+            } else {
+                document.getElementById('achYear').value = currentSelectedYear;
+            }
             document.getElementById('achievementModal').classList.remove('hidden');
         }
 
@@ -1968,14 +2577,16 @@
             e.preventDefault();
             const student = getCurrentStudent();
             if (!student.achievements) student.achievements = [];
-            const newItem = {
-                id: Date.now(),
+            const item = {
                 title: document.getElementById('achTitle').value,
                 year: document.getElementById('achYear').value,
                 level: document.getElementById('achLevel').value,
                 desc: document.getElementById('achDesc').value
             };
-            student.achievements.push(newItem);
+            const editId = Number(document.getElementById('achEditId').value) || null;
+            const idx = editId ? student.achievements.findIndex(a => a.id === editId) : -1;
+            if (idx !== -1) student.achievements[idx] = { ...student.achievements[idx], ...item };
+            else student.achievements.push({ id: Date.now(), ...item });
             saveData();
             renderAchievements();
             renderCurrentStudentData();
@@ -2011,6 +2622,7 @@
                                 ? `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`
                                 : `<img src="${item.url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">`
                             }
+                            <button onclick="event.stopPropagation(); openMediaModal(${item.id})" class="absolute top-2 right-12 sm:right-10 bg-slate-900/60 hover:bg-indigo-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="event.stopPropagation(); deleteMediaItem(${item.id})" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-rose-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
@@ -2024,8 +2636,19 @@
             });
         }
 
-        function openMediaModal() {
+        function openMediaModal(id) {
             document.getElementById('mediaForm').reset();
+            document.getElementById('mediaEditId').value = id || '';
+            document.querySelector('#mediaModal h3').textContent = id ? 'Sửa Ảnh / Video Kỷ Niệm' : 'Thêm Ảnh / Video Kỷ Niệm';
+            if (id) {
+                const m = (getCurrentStudent().media || []).find(x => x.id === id);
+                if (m) {
+                    document.getElementById('mediaType').value = m.type || 'image';
+                    document.getElementById('mediaTitle').value = m.title || '';
+                    document.getElementById('mediaUrl').value = m.url || '';
+                    document.getElementById('mediaDate').value = m.date || '';
+                }
+            }
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
@@ -2047,14 +2670,16 @@
             e.preventDefault();
             const student = getCurrentStudent();
             if (!student.media) student.media = [];
-            const newItem = {
-                id: Date.now(),
+            const item = {
                 type: document.getElementById('mediaType').value,
                 title: document.getElementById('mediaTitle').value,
                 url: document.getElementById('mediaUrl').value || 'https://placehold.co/600x400/e2e8f0/475569?text=Media',
                 date: document.getElementById('mediaDate').value
             };
-            student.media.push(newItem);
+            const editId = Number(document.getElementById('mediaEditId').value) || null;
+            const idx = editId ? student.media.findIndex(m => m.id === editId) : -1;
+            if (idx !== -1) student.media[idx] = { ...student.media[idx], ...item };
+            else student.media.push({ id: Date.now(), ...item });
             saveData();
             renderGallery();
             renderCurrentStudentData();
@@ -2442,6 +3067,486 @@
         setInterval(refreshPlanViews, 60000);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkReminders(); refreshPlanViews(); } });
         window.addEventListener('load', () => setTimeout(checkReminders, 800));
+
+        // =====================================================
+        // ĐỒNG BỘ GOOGLE SHEET (qua Google Apps Script web app)
+        // =====================================================
+        const SYNC_CFG_KEY = 'family_sync_cfg_v1', SYNC_META_KEY = 'family_sync_meta_v1';
+        let syncCfg = { url: '', token: '', auto: true };
+        let syncMeta = { localTs: 0, syncedLocalTs: 0, remoteTs: 0 };
+        let syncReady = false, syncBusy = false, syncTimer = null, syncState = 'off';
+
+        function loadSyncCfg() {
+            try { Object.assign(syncCfg, JSON.parse(localStorage.getItem(SYNC_CFG_KEY) || '{}')); } catch (e) {}
+            try { Object.assign(syncMeta, JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{}')); } catch (e) {}
+        }
+        function saveSyncCfg() { try { localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg)); } catch (e) {} }
+        function saveSyncMeta() { try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(syncMeta)); } catch (e) {} }
+        function syncConfigured() { return !!(syncCfg.url && syncCfg.token); }
+
+        const SYNC_STYLE = {
+            off:   { dot: 'bg-slate-300',               icon: 'fa-cloud',             box: 'bg-slate-50 border-slate-200 text-slate-600' },
+            ok:    { dot: 'bg-emerald-500',             icon: 'fa-cloud-arrow-up',    box: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+            busy:  { dot: 'bg-amber-400 animate-pulse', icon: 'fa-rotate fa-spin',    box: 'bg-amber-50 border-amber-200 text-amber-700' },
+            dirty: { dot: 'bg-amber-500',               icon: 'fa-cloud',             box: 'bg-amber-50 border-amber-200 text-amber-700' },
+            err:   { dot: 'bg-rose-500',                icon: 'fa-triangle-exclamation', box: 'bg-rose-50 border-rose-200 text-rose-700' }
+        };
+        function setSyncState(st, msg) {
+            syncState = st;
+            const c = SYNC_STYLE[st] || SYNC_STYLE.off;
+            const dot = document.getElementById('syncDot'), icon = document.getElementById('syncIcon'), box = document.getElementById('syncStatus');
+            if (dot) dot.className = `absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${c.dot}`;
+            if (icon) icon.className = `fa-solid ${c.icon}`;
+            if (box) { box.className = `text-xs font-bold rounded-xl px-3 py-2.5 border ${c.box}`; box.textContent = msg || ({ off: 'Chưa kết nối Google Sheet', ok: 'Đã đồng bộ', busy: 'Đang đồng bộ...', dirty: 'Có thay đổi chưa lưu lên Sheet', err: 'Lỗi' }[st]); }
+        }
+        function updateSyncUi() { setSyncState(syncConfigured() ? (syncMeta.localTs > syncMeta.syncedLocalTs ? 'dirty' : 'ok') : 'off'); }
+
+        function markLocalChange() {
+            syncMeta.localTs = Date.now();
+            saveSyncMeta();
+            if (syncReady && syncConfigured() && syncCfg.auto) {
+                setSyncState('dirty', 'Có thay đổi, sẽ tự lưu lên Google Sheet sau vài giây...');
+                clearTimeout(syncTimer);
+                syncTimer = setTimeout(() => syncPush(), 4000);
+            }
+        }
+
+        async function syncRequest(payload) {
+            const ctl = new AbortController();
+            const to = setTimeout(() => ctl.abort(), 60000);
+            try {
+                const res = await fetch(syncCfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), signal: ctl.signal });
+                const txt = await res.text();
+                let j;
+                try { j = JSON.parse(txt); } catch (e) {
+                    const snip = txt.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+                    throw new Error('Google trả về trang web thay vì dữ liệu (' + (snip || 'rỗng') + '). Thường do: chưa triển khai phiên bản mới, quyền truy cập chưa là "Bất kỳ ai", hoặc mã Apps Script bị lỗi/trùng khi dán.');
+                }
+                if (!j.ok) { const er = new Error(j.error || 'Lỗi không rõ'); er.conflict = !!j.conflict; throw er; }
+                return j;
+            } catch (e) {
+                if (e.name === 'AbortError') throw new Error('Quá thời gian chờ');
+                if (e instanceof TypeError) throw new Error('Không kết nối được tới Google. Thường do: quyền truy cập chưa đặt "Bất kỳ ai" (đang là "Bất kỳ ai có tài khoản Google"/"Chỉ mình tôi"), URL sai, hoặc mất mạng. Bấm "Chẩn đoán lỗi" để kiểm tra.');
+                throw e;
+            } finally { clearTimeout(to); }
+        }
+
+        async function syncPush(force) {
+            if (!syncConfigured() || syncBusy) return false;
+            syncBusy = true;
+            setSyncState('busy', 'Đang lưu lên Google Sheet...');
+            const pushedLocal = syncMeta.localTs;
+            try {
+                const ts = Date.now();
+                await syncRequest({ action: 'save', token: syncCfg.token, savedAt: ts, baseTs: syncMeta.remoteTs, force: force === true, data: studentsData });
+                syncMeta.remoteTs = ts; syncMeta.syncedLocalTs = pushedLocal; saveSyncMeta();
+                setSyncState('ok', 'Đã lưu lên Google Sheet lúc ' + new Date(ts).toLocaleTimeString('vi-VN'));
+                return true;
+            } catch (e) {
+                if (e.conflict) {
+                    syncBusy = false;
+                    return await resolveConflict();
+                }
+                setSyncState('err', 'Lỗi khi lưu: ' + e.message);
+                return false;
+            } finally {
+                syncBusy = false;
+                if (syncMeta.localTs > pushedLocal && syncCfg.auto && syncState === 'ok') { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncPush(), 4000); }
+            }
+        }
+
+        async function resolveConflict() {
+            if (confirm('Google Sheet vừa có chỉnh sửa mới hơn (có thể bạn vừa sửa trực tiếp trong Sheet).\n\nOK = tải bản từ Sheet về máy (bỏ thay đổi chưa lưu trên máy)\nHủy = giữ bản trên máy và ghi đè lên Sheet')) {
+                try {
+                    const j = await syncRequest({ action: 'load', token: syncCfg.token });
+                    applyRemote(j.data, j.savedAt, j.warnings);
+                    setSyncState('ok', 'Đã tải bản mới từ Google Sheet');
+                    return true;
+                } catch (e) { setSyncState('err', 'Lỗi khi tải: ' + e.message); return false; }
+            }
+            return await syncPush(true);
+        }
+
+        function applyRemote(data, ts, warnings) {
+            if (!Array.isArray(data) || !data.length) throw new Error('Dữ liệu trên Sheet không hợp lệ');
+            try { localStorage.setItem('family_students_data_backup', JSON.stringify(studentsData)); } catch (e) {}   // phòng khi cần quay lại
+            // giữ lại cờ "đã nhắc" của các lịch hẹn để không nhắc lại
+            const oldFlags = {};
+            (studentsData || []).forEach(x => (x.plans || []).forEach(pl => { oldFlags[`${x.id}|${pl.title}|${pl.date}|${pl.time}|${pl.remind}`] = [pl.n1, pl.n2]; }));
+            data.forEach(x => (x.plans || []).forEach(pl => {
+                const f = oldFlags[`${x.id}|${pl.title}|${pl.date}|${pl.time}|${pl.remind}`];
+                const late = Date.now() > planDate(pl).getTime() + 3600000;
+                pl.n1 = f ? !!f[0] : late; pl.n2 = f ? !!f[1] : late;
+            }));
+            studentsData = data;
+            migrateData();
+            if (warnings && warnings.length) showToast('Một số dòng trong Google Sheet bị bỏ qua', warnings.slice(0, 3).join(' · ') + (warnings.length > 3 ? ` (+${warnings.length - 3})` : ''));
+            try { localStorage.setItem('family_students_data_v2', JSON.stringify(studentsData)); } catch (e) {}
+            syncMeta.remoteTs = ts; syncMeta.localTs = Date.now(); syncMeta.syncedLocalTs = syncMeta.localTs; saveSyncMeta();
+            if (!studentsData.some(x => x.id === currentStudentId)) currentStudentId = studentsData[0].id;
+            renderKidTabs(); renderYearSelector(); renderCurrentStudentData(); applyViewMode();
+        }
+
+        async function initialSync() {
+            if (!syncConfigured()) { syncReady = true; setSyncState('off'); return; }
+            setSyncState('busy', 'Đang kiểm tra Google Sheet...');
+            try {
+                const j = await syncRequest({ action: 'load', token: syncCfg.token });
+                const localChanged = syncMeta.localTs > syncMeta.syncedLocalTs;
+                syncReady = true;
+                if (j.empty) { await syncPush(); return; }
+                if (j.savedAt > syncMeta.remoteTs) {
+                    if (!localChanged) {
+                        applyRemote(j.data, j.savedAt, j.warnings);
+                        setSyncState('ok', 'Đã tải bản mới nhất từ Google Sheet');
+                        showToast('Đã cập nhật từ Google Sheet', 'Dữ liệu mới nhất đã được tải về máy này.');
+                    } else if (confirm('Cả máy này và Google Sheet đều có thay đổi mới.\n\nOK = dùng bản trên Google Sheet (bỏ thay đổi trên máy)\nHủy = giữ bản trên máy và ghi đè lên Sheet')) {
+                        applyRemote(j.data, j.savedAt, j.warnings);
+                        setSyncState('ok', 'Đã tải bản từ Google Sheet');
+                    } else { await syncPush(true); }
+                } else if (localChanged) { await syncPush(); }
+                else setSyncState('ok', 'Đã đồng bộ với Google Sheet');
+            } catch (e) { syncReady = true; setSyncState('err', 'Không kết nối được: ' + e.message); }
+        }
+
+        // Máy khác vừa lưu? kiểm tra nhẹ khi quay lại trang
+        async function syncCheckRemote() {
+            if (!syncReady || !syncConfigured() || syncBusy || syncMeta.localTs > syncMeta.syncedLocalTs) return;
+            try {
+                const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
+                if (st.savedAt > syncMeta.remoteTs) {
+                    const j = await syncRequest({ action: 'load', token: syncCfg.token });
+                    if (!j.empty) { applyRemote(j.data, j.savedAt, j.warnings); setSyncState('ok', 'Đã tải bản mới từ Google Sheet'); showToast('Đã cập nhật từ Google Sheet', 'Có thay đổi mới từ thiết bị khác.'); }
+                }
+            } catch (e) {}
+        }
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) syncCheckRemote(); });
+        setInterval(syncCheckRemote, 120000);
+
+        // ----- Hộp thoại -----
+        function openSyncModal() {
+            document.getElementById('syncUrl').value = syncCfg.url || '';
+            document.getElementById('syncToken').value = syncCfg.token || '';
+            document.getElementById('syncAuto').checked = syncCfg.auto !== false;
+            document.getElementById('syncGuide').open = !syncConfigured();
+            updateSyncUi();
+            document.getElementById('syncModal').classList.remove('hidden');
+        }
+        function readSyncForm() {
+            syncCfg.url = document.getElementById('syncUrl').value.trim();
+            syncCfg.token = document.getElementById('syncToken').value;
+            syncCfg.auto = document.getElementById('syncAuto').checked;
+            saveSyncCfg();
+        }
+        async function saveSyncSettings() {
+            readSyncForm();
+            if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(syncCfg.url)) { setSyncState('err', 'URL chưa đúng: phải bắt đầu bằng https://script.google.com và kết thúc bằng /exec'); return; }
+            if (!syncCfg.token) { setSyncState('err', 'Hãy nhập mật khẩu (SECRET) đã đặt trong Apps Script'); return; }
+            setSyncState('busy', 'Đang kiểm tra kết nối...');
+            try {
+                await syncRequest({ action: 'ping', token: syncCfg.token });
+                await initialSync();
+            } catch (e) { setSyncState('err', 'Kết nối thất bại: ' + e.message); }
+        }
+        async function syncPushNow() {
+            readSyncForm();
+            if (!syncConfigured()) { setSyncState('err', 'Hãy nhập URL và mật khẩu rồi bấm "Kết nối & kiểm tra" trước'); return; }
+            syncReady = true;
+            await syncPush();
+        }
+        async function syncPullNow() {
+            readSyncForm();
+            if (!syncConfigured()) { setSyncState('err', 'Hãy nhập URL và mật khẩu rồi bấm "Kết nối & kiểm tra" trước'); return; }
+            if (!confirm('Thay dữ liệu trên máy này bằng bản trên Google Sheet?')) return;
+            setSyncState('busy', 'Đang tải từ Google Sheet...');
+            try {
+                const j = await syncRequest({ action: 'load', token: syncCfg.token });
+                if (j.empty) { setSyncState('err', 'Google Sheet chưa có dữ liệu. Hãy bấm "Lưu lên Sheet" trước.'); return; }
+                applyRemote(j.data, j.savedAt, j.warnings);
+                syncReady = true;
+                setSyncState('ok', 'Đã tải dữ liệu từ Google Sheet');
+            } catch (e) { setSyncState('err', 'Lỗi khi tải: ' + e.message); }
+        }
+        async function syncDiagnose() {
+            readSyncForm();
+            const box = document.getElementById('syncDiag');
+            box.classList.remove('hidden');
+            const out = [];
+            const show = () => { box.textContent = out.join('\n'); };
+            out.push('Trình duyệt: ' + (navigator.onLine ? 'đang có mạng' : 'KHÔNG có mạng') + ' · trang mở từ: ' + location.protocol); show();
+            if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(syncCfg.url)) {
+                out.push('✗ URL chưa đúng dạng https://script.google.com/macros/s/…/exec (đang là: ' + (syncCfg.url || 'trống') + ')'); show(); return;
+            }
+            out.push('✓ URL đúng dạng'); show();
+            if (!syncCfg.token) { out.push('✗ Chưa nhập mật khẩu'); show(); return; }
+            let ping;
+            try { ping = await syncRequest({ action: 'ping', token: syncCfg.token }); }
+            catch (e) { out.push('✗ Gọi thử thất bại: ' + e.message); show(); return; }
+            out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
+            if ((ping.version || 0) < 3) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v3)');
+            show();
+            try {
+                const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
+                out.push('✓ Đọc Google Sheet được (' + (st.savedAt ? 'đã có dữ liệu, lần lưu cuối ' + new Date(st.savedAt).toLocaleString('vi-VN') : 'Sheet đang trống') + ')');
+            } catch (e) { out.push('✗ Không đọc được Google Sheet: ' + e.message); }
+            out.push('Dữ liệu gửi lên khoảng ' + Math.round(JSON.stringify(studentsData).length / 1024) + ' KB.');
+            show();
+        }
+
+        function syncDisconnect() {
+            if (!confirm('Ngắt kết nối Google Sheet? Dữ liệu trên máy và trên Sheet vẫn được giữ nguyên.')) return;
+            syncCfg = { url: '', token: '', auto: true };
+            syncMeta.remoteTs = 0; syncMeta.syncedLocalTs = 0;
+            saveSyncCfg(); saveSyncMeta();
+            document.getElementById('syncUrl').value = ''; document.getElementById('syncToken').value = '';
+            setSyncState('off');
+        }
+        function copyGasCode() {
+            const text = document.getElementById('gasCode').textContent.replace(/^\n/, '');
+            const done = () => { const l = document.getElementById('gasCopyLabel'); l.textContent = 'Đã sao chép!'; setTimeout(() => l.textContent = 'Sao chép mã Apps Script', 2000); };
+            const fallback = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) {} t.remove(); };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+        }
+
+        // =====================================================
+        // LỊCH SỬ THEO NĂM HỌC
+        // =====================================================
+        let historyChartInstance = null;
+
+        function setSelectValue(id, val) {
+            const sel = document.getElementById(id);
+            if (val && ![...sel.options].some(o => o.value === val)) sel.add(new Option(val, val));
+            sel.value = val;
+        }
+        function kidYears(s) {
+            const ys = new Set([CURRENT_YEAR, ...Object.keys((s && s.academicYears) || {})]);
+            return [...ys].filter(Boolean).sort().reverse();
+        }
+        function goYear(y, tab) {
+            currentSelectedYear = y;
+            renderYearSelector();
+            refreshView();
+            if (tab) switchTab(tab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function editYear(y) {
+            currentSelectedYear = y;
+            renderYearSelector();
+            refreshView();
+            openEvaluationModal();
+        }
+
+        function yearInfoHtml(yd, st, y) {
+            const tel = yd.teacherPhone ? `<a href="tel:${esc(yd.teacherPhone)}" class="text-emerald-600 hover:underline" onclick="event.stopPropagation()"><i class="fa-solid fa-phone mr-1"></i>${esc(yd.teacherPhone)}</a>` : '';
+            return `
+                <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-school text-indigo-400"></i>${esc(yd.school || st.school || 'Chưa có trường')}</span>
+                <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users-rectangle text-indigo-400"></i>${esc(yd.grade || 'Chưa có lớp')}</span>
+                <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-chalkboard-user text-indigo-400"></i>GVCN: ${esc(yd.teacherName || 'chưa cập nhật')}</span>
+                ${tel}`;
+        }
+
+        function renderYearInfoStrip() {
+            const el = document.getElementById('ttYearInfo');
+            if (!el) return;
+            const st = getCurrentStudent(), yd = getCurrentYearData();
+            el.innerHTML = `<div class="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-600">
+                <span class="text-indigo-600 font-extrabold">${esc(currentSelectedYear)}${currentSelectedYear === CURRENT_YEAR ? ' ★' : ''}</span>
+                ${yearInfoHtml(yd, st, currentSelectedYear)}
+                <button onclick="openEvaluationModal()" class="ml-auto text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-pen mr-1"></i>Sửa trường / lớp / GV</button>
+            </div>`;
+        }
+
+        function renderHistory() {
+            renderYearInfoStrip();
+            document.querySelectorAll('.cur-year-label').forEach(x => x.textContent = currentSelectedYear);
+            const list = document.getElementById('historyList');
+            if (!list) return;
+            const st = getCurrentStudent();
+            const normY = y => String(y || '').replace(/\s*[-–]\s*/g, '-').trim();
+            const years = kidYears(st);
+            list.innerHTML = years.map(y => {
+                const yd = (st.academicYears || {})[y] || { school: '', grade: '', timetable: [], grades: [], evaluation: {} };
+                const ev = yd.evaluation || {};
+                const stt = calcKidStats(st, y);
+                const isCur = y === CURRENT_YEAR, isSel = y === currentSelectedYear;
+                const nAch = (st.achievements || []).filter(a => normY(a.year) === y).length;
+                const nTT = (yd.timetable || []).length, nG = (yd.grades || []).length;
+                const pct = stt.avg !== null ? Math.round(stt.avg * 10) : 0;
+                return `
+                <div class="relative pl-6">
+                    <span class="absolute left-0 top-6 w-3 h-3 rounded-full ${isCur ? 'bg-indigo-600 ring-4 ring-indigo-100' : 'bg-slate-300 ring-4 ring-slate-50'}"></span>
+                    <div class="bg-white rounded-3xl border ${isSel ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-slate-200'} shadow-sm p-4 sm:p-5 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-base font-black text-slate-800">${esc(y)}</span>
+                                    ${isCur ? '<span class="text-[10px] font-extrabold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Năm hiện tại</span>' : ''}
+                                    ${isSel && !isCur ? '<span class="text-[10px] font-extrabold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Đang xem</span>' : ''}
+                                </div>
+                                <div class="text-xs font-bold text-slate-500 mt-1">${esc(yd.grade || 'Chưa có lớp')} · ${esc(yd.school || 'Chưa có trường')}</div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <div class="text-lg font-black px-3 py-1 rounded-xl ${scoreClass(stt.avg)}">${stt.avg !== null ? stt.avg.toFixed(2) : '--'}</div>
+                                <div class="text-[10px] font-bold text-slate-400 mt-0.5">ĐTB cả năm</div>
+                            </div>
+                        </div>
+                        ${stt.avg !== null ? `<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-indigo-500 to-pink-500" style="width:${pct}%"></div></div>` : ''}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-slate-600">
+                            <div><span class="text-slate-400 font-bold">GVCN:</span> <b>${esc(yd.teacherName || 'chưa cập nhật')}</b>${yd.teacherPhone ? ` · <a href="tel:${esc(yd.teacherPhone)}" class="text-emerald-600 font-bold">${esc(yd.teacherPhone)}</a>` : ''}</div>
+                            <div><span class="text-slate-400 font-bold">Học lực / Hạnh kiểm:</span> <b>${esc(ev.academic || '--')}</b> / <b>${esc(ev.behavior || '--')}</b></div>
+                            <div class="sm:col-span-2"><span class="text-slate-400 font-bold">Khen thưởng:</span> <b class="text-amber-600">${esc(ev.reward || 'chưa ghi nhận')}</b></div>
+                            <div class="sm:col-span-2 text-slate-400">${nG} môn có điểm · ${nTT} tiết/ca trong TKB · ${nAch} thành tích${stt.hk1 !== null ? ` · HK1 ${stt.hk1.toFixed(2)}` : ''}${stt.hk2 !== null ? ` · HK2 ${stt.hk2.toFixed(2)}` : ''}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="goYear('${esc(y)}','timetable')" class="py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-xs font-bold"><i class="fa-solid fa-calendar-week mr-1"></i>Xem lịch</button>
+                            <button onclick="goYear('${esc(y)}','grades')" class="py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-xs font-bold"><i class="fa-solid fa-chart-line mr-1"></i>Xem điểm</button>
+                            <button onclick="editYear('${esc(y)}')" class="py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-xs font-bold"><i class="fa-solid fa-pen mr-1"></i>Sửa</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // biểu đồ ĐTB qua các năm (năm cũ -> mới)
+            const pts = years.slice().reverse().map(y => ({ y, v: calcKidStats(st, y).avg })).filter(p => p.v !== null);
+            const box = document.getElementById('historyChartBox');
+            if (historyChartInstance) { historyChartInstance.destroy(); historyChartInstance = null; }
+            box.style.display = pts.length ? '' : 'none';
+            const sec = document.getElementById('section-history');
+            if (!pts.length || typeof Chart === 'undefined' || (sec && sec.classList.contains('hidden'))) return;
+            historyChartInstance = new Chart(document.getElementById('historyChart'), {
+                type: 'line',
+                data: { labels: pts.map(p => p.y), datasets: [{ label: 'ĐTB cả năm', data: pts.map(p => Number(p.v.toFixed(2))), borderColor: 'rgba(99,102,241,1)', backgroundColor: 'rgba(99,102,241,.12)', fill: true, tension: .3, pointRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { suggestedMin: 5, max: 10 } } }
+            });
+        }
+
+        // =====================================================
+        // NHẬP THỜI KHÓA BIỂU CẢ TUẦN (từ file / dán từ Excel)
+        // =====================================================
+        function openTtImport() {
+            document.getElementById('ttImportText').value = '';
+            document.getElementById('ttImportTarget').textContent = `${getCurrentStudent().name} · năm học ${currentSelectedYear}`;
+            previewTtImport();
+            document.getElementById('ttImportModal').classList.remove('hidden');
+        }
+        function ttImportFile(e) {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => { document.getElementById('ttImportText').value = String(ev.target.result).replace(/^﻿/, ''); previewTtImport(); };
+            r.readAsText(f, 'utf-8');
+            e.target.value = '';
+        }
+        function ttNorm(v) { return String(v || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+        function ttDayKey(v) {
+            const k = ttNorm(v);
+            const m = k.match(/^(?:thứ|thu|t)\s*([2-7])$/) || k.match(/^([2-7])$/);
+            if (m) return 'Thu ' + m[1];
+            if (['cn', 'chủ nhật', 'chu nhat'].includes(k)) return 'CN';
+            const f = Object.entries(DAY_FULL).find(([, lab]) => lab.toLowerCase() === k);
+            return f ? f[0] : null;
+        }
+        function ttSessionKey(v) {
+            const k = ttNorm(v).replace(/^buổi /, '');
+            if (['sáng', 'sang'].includes(k)) return 'sang';
+            if (['chiều', 'chieu'].includes(k)) return 'chieu';
+            if (['học thêm', 'hoc them', 'them', 'thêm', 'ht', 'ngoại khóa', 'ngoai khoa', 'tối', 'toi'].includes(k)) return 'them';
+            return null;
+        }
+        function parseTt(text) {
+            const items = [], errors = [];
+            const NAMES = { day: ['thứ'], session: ['buổi'], period: ['tiết', 'tiết / ca', 'ca'], time: ['giờ', 'giờ bắt đầu'], subject: ['môn', 'môn học'],
+                            teacher: ['giáo viên', 'gv'], room: ['phòng / nơi học', 'phòng', 'nơi học'], note: ['ghi chú'] };
+            let idx = { day: 0, session: 1, period: 2, time: 3, subject: 4, teacher: 5, room: 6, note: 7 };
+            String(text || '').split(/\r?\n/).forEach((line, i) => {
+                if (!line.trim()) return;
+                const cells = (line.includes('\t') ? line.split('\t') : line.split(/[;|]/)).map(c => c.trim());
+                if (ttNorm(cells[0]) === 'thứ') {                                   // dòng tiêu đề -> lấy vị trí cột
+                    const h = cells.map(ttNorm);
+                    const map = {};
+                    Object.entries(NAMES).forEach(([k, al]) => { const j = h.findIndex(x => al.includes(x)); if (j >= 0) map[k] = j; });
+                    idx = { ...idx, ...map };
+                    if (!('teacher' in map)) idx.teacher = -1;
+                    return;
+                }
+                const c = k => (idx[k] >= 0 ? (cells[idx[k]] || '') : '');
+                const day = ttDayKey(c('day')), session = ttSessionKey(c('session'));
+                const period = parseInt(c('period').replace(/\D+/g, ''), 10);
+                const subject = c('subject');
+                const where = `Dòng ${i + 1}`;
+                if (!day) { errors.push(`${where}: không hiểu "Thứ" = "${c('day')}"`); return; }
+                if (!session) { errors.push(`${where}: không hiểu "Buổi" = "${c('session')}"`); return; }
+                if (!TIMETABLE_SLOTS.some(sl => sl.session === session && sl.period === period)) { errors.push(`${where}: tiết "${c('period')}" không có trong buổi ${c('session')}`); return; }
+                if (!subject) { errors.push(`${where}: thiếu tên môn`); return; }
+                let time = c('time').split(/\s*[-–]\s*/)[0];
+                const tm = time.match(/^(\d{1,2})\s*[:h.]\s*(\d{2})$/);
+                if (tm) time = ('0' + tm[1]).slice(-2) + ':' + tm[2];
+                const it = { day, session, period, time, subject, teacher: c('teacher'), room: c('room'), note: c('note') };
+                const gm = !it.teacher && it.note.match(/^\s*(?:GV|Giáo viên)\s*:\s*(.+)$/i);
+                if (gm) { it.teacher = gm[1].trim(); it.note = ''; }
+                items.push(it);
+            });
+            return { items, errors };
+        }
+
+        function previewTtImport() {
+            const { items, errors } = parseTt(document.getElementById('ttImportText').value);
+            const box = document.getElementById('ttImportPreview');
+            if (!items.length && !errors.length) { box.textContent = 'Chưa có dữ liệu.'; return; }
+            const perDay = DAYS_KEYS.map(k => `${DAY_SHORT[k]}: ${items.filter(it => it.day === k).length}`).join(' · ');
+            box.innerHTML = `<div class="font-bold text-emerald-700">✓ Đọc được ${items.length} tiết/ca</div><div class="text-slate-500 mt-0.5">${perDay}</div>` +
+                (errors.length ? `<div class="mt-1.5 text-rose-600 font-bold">✗ ${errors.length} dòng lỗi (sẽ bỏ qua):</div><div class="text-rose-600">${errors.slice(0, 5).map(esc).join('<br>')}${errors.length > 5 ? '<br>…' : ''}</div>` : '');
+        }
+        function doTtImport() {
+            const { items, errors } = parseTt(document.getElementById('ttImportText').value);
+            if (!items.length) { previewTtImport(); return; }
+            const mode = (document.querySelector('input[name="ttImportMode"]:checked') || {}).value || 'replace';
+            const yd = getCurrentYearData();
+            if (mode === 'replace') {
+                if ((yd.timetable || []).length && !confirm(`Thay toàn bộ ${yd.timetable.length} tiết hiện có của năm ${currentSelectedYear} bằng ${items.length} tiết mới?`)) return;
+                yd.timetable = [];
+            }
+            const base = Date.now();
+            items.forEach((it, i) => {
+                yd.timetable = (yd.timetable || []).filter(x => !(x.day === it.day && x.session === it.session && Number(x.period) === it.period));
+                yd.timetable.push({ id: base + i, ...it });
+            });
+            saveData();
+            renderTimetable();
+            closeModal('ttImportModal');
+            showToast('Đã nhập thời khóa biểu', `${items.length} tiết/ca cho ${shortName(getCurrentStudent().name)} · ${currentSelectedYear}` + (errors.length ? ` (bỏ qua ${errors.length} dòng lỗi)` : ''));
+        }
+        function downloadTtTemplate() {
+            const rows = ['Thứ\tBuổi\tTiết\tGiờ\tMôn\tGiáo viên\tPhòng / Nơi học\tGhi chú', 'Thứ Hai\tSáng\t1\t07:15\tToán\tThầy Dũng\tP.6B\tMang compa', 'Thứ Hai\tChiều\t1\t14:00\tNgữ văn\tCô Dung\t\t', 'Thứ Ba\tHọc thêm\t1\t17:00\tTiếng Anh\t\tTrung tâm\tĐến 19:00'];
+            const url = URL.createObjectURL(new Blob(['﻿' + rows.join('\r\n')], { type: 'text/plain;charset=utf-8' }));
+            const a = document.createElement('a'); a.href = url; a.download = 'mau-thoi-khoa-bieu.txt'; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        function addMin(hm, m) {
+            const [h, mi] = hm.split(':').map(Number); const t = h * 60 + mi + m;
+            return ('0' + Math.floor(t / 60) % 24).slice(-2) + ':' + ('0' + t % 60).slice(-2);
+        }
+        function slotStart(items, slot) {
+            const cnt = {};
+            items.filter(i => i.session === slot.session && Number(i.period) === slot.period && /^\d{2}:\d{2}$/.test(i.time || ''))
+                 .forEach(i => cnt[i.time] = (cnt[i.time] || 0) + 1);
+            const best = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+            return best ? best[0] : null;
+        }
+        function slotTimeLabel(items, slot) {
+            const st = slotStart(items, slot);
+            if (!st) return slot.defaultTime.replace(' - ', '–');
+            return slot.session === 'them' ? 'từ ' + st : st + '–' + addMin(st, 45);
+        }
+        function migrateData() {
+            (studentsData || []).forEach(st => Object.values(st.academicYears || {}).forEach(yd => (yd.timetable || []).forEach(it => {
+                if (it.teacher !== undefined) return;
+                const m = String(it.note || '').match(/^\s*(?:GV|Giáo viên)\s*:\s*(.+)$/i);
+                if (m) { it.teacher = m[1].trim(); it.note = ''; } else it.teacher = '';
+            })));
+        }
 
         // --- UTILS ---
         function closeModal(modalId) {
