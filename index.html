@@ -1557,98 +1557,692 @@ function guiNhacLich() {
     <!-- JAVASCRIPT APP LOGIC -->
     <script>
         // --- 1. MOCK DATA DÀNH CHO 5 CON THEO NĂM HỌC ---
+        // Dữ liệu mặc định = bản mới nhất lấy từ Google Sheet (cập nhật 12/11/2026).
+        // Máy mới mở file sẽ thấy ngay dữ liệu này, sau đó tự đồng bộ với Google Sheet.
         const DEFAULT_STUDENTS = [
             {
-                id: 'child_1',
-                name: 'Nguyễn Minh Anh',
-                birthday: '2017-05-12',
-                hometown: 'Đông Nguyên, Từ Sơn, Bắc Ninh',
-                idNumber: '027317001234',
-                idIssueDate: '2023-08-15',
-                phone: '0912345671',
-                grade: 'Lớp 1A',
-                school: 'Trường Tiểu Học Nguyễn Du',
-                avatar: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&q=80&w=300',
-                academicYears: {
-                    '2023-2024': {
-                        school: 'Trường Tiểu Học Nguyễn Du',
-                        grade: 'Lớp 1A',
-                        teacherName: 'Cô Trần Thị Mai',
-                        teacherPhone: '0912345678',
-                        evaluation: { academic: 'Xuất sắc', behavior: 'Tốt', reward: 'Học sinh Xuất sắc toàn diện' },
-                        timetable: [
-                            { id: 1, day: 'Thu 2', session: 'sang', period: 1, subject: 'Chào cờ', time: '07:15', room: 'Sân trường', note: '' },
-                            { id: 2, day: 'Thu 2', session: 'sang', period: 2, subject: 'Toán', time: '08:05', room: '1A', note: '' },
-                            { id: 3, day: 'Thu 2', session: 'sang', period: 3, subject: 'Tiếng Việt', time: '09:00', room: '1A', note: '' },
-                            { id: 4, day: 'Thu 3', session: 'sang', period: 1, subject: 'Mỹ Thuật', time: '07:15', room: 'Phòng MT', note: 'Mang màu' },
-                            { id: 5, day: 'Thu 4', session: 'chieu', period: 1, subject: 'Âm Nhạc', time: '14:00', room: 'Phòng Nhạc', note: '' },
-                            { id: 6, day: 'Thu 5', session: 'them', period: 1, subject: 'Tiếng Anh Giao Tiếp', time: '17:30', room: 'TT Anh Ngữ', note: 'Cô Sarah' }
-                        ],
-                        grades: [
-                            { id: 1, subject: 'Toán Học', mid1: 9.5, final1: 10, mid2: 9.0, final2: 10 },
-                            { id: 2, subject: 'Tiếng Việt', mid1: 8.5, final1: 9.0, mid2: 9.0, final2: 9.5 },
-                            { id: 3, subject: 'Tiếng Anh', mid1: 9.0, final1: 9.5, mid2: 9.5, final2: 10 },
-                            { id: 4, subject: 'Mỹ Thuật', mid1: 10, final1: 10, mid2: 9.5, final2: 10 }
+                "id": "child_1",
+                "name": "Nguyễn Doãn Việt Anh",
+                "birthday": "2015-11-08",
+                "phone": "0987092457",
+                "hometown": "Đông Nguyên, Từ Sơn, Bắc Ninh",
+                "idNumber": "",
+                "idIssueDate": "",
+                "grade": "Lớp 6B",
+                "school": "Trường THCS Tiên Du",
+                "avatar": "https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&q=80&w=300",
+                "academicYears": {
+                    "2022-2023": {
+                        "school": "Trường Mầm Non Hoa Hồng",
+                        "grade": "Lớp Lá 1",
+                        "teacherName": "Cô Nguyễn Thu Hương",
+                        "teacherPhone": "0987654321",
+                        "evaluation": {
+                            "academic": "Giỏi",
+                            "behavior": "Tốt",
+                            "reward": "Bé Khỏe Bé Ngoan"
+                        },
+                        "timetable": [],
+                        "grades": [
+                            {
+                                "id": 1,
+                                "subject": "Nhận Biết Mẫu Giáo",
+                                "mid1": 9,
+                                "final1": 9,
+                                "mid2": 9.5,
+                                "final2": 9.5,
+                                "note": ""
+                            }
                         ]
                     },
-                    '2022-2023': {
-                        school: 'Trường Mầm Non Hoa Hồng',
-                        grade: 'Lớp Lá 1',
-                        teacherName: 'Cô Nguyễn Thu Hương',
-                        teacherPhone: '0987654321',
-                        evaluation: { academic: 'Giỏi', behavior: 'Tốt', reward: 'Bé Khỏe Bé Ngoan' },
-                        timetable: [],
-                        grades: [
-                            { id: 1, subject: 'Nhận Biết Mẫu Giáo', mid1: 9.0, final1: 9.0, mid2: 9.5, final2: 9.5 }
+                    "2023-2024": {
+                        "school": "Trường Tiểu Học Nguyễn Du",
+                        "grade": "Lớp 1A",
+                        "teacherName": "Cô Trần Thị Mai",
+                        "teacherPhone": "0912345678",
+                        "evaluation": {
+                            "academic": "Xuất sắc",
+                            "behavior": "Tốt",
+                            "reward": "Học sinh Xuất sắc toàn diện"
+                        },
+                        "timetable": [
+                            {
+                                "id": 1,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "Chào cờ",
+                                "teacher": "",
+                                "room": "Sân trường",
+                                "note": ""
+                            },
+                            {
+                                "id": 2,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:05",
+                                "subject": "Toán",
+                                "teacher": "",
+                                "room": "1A",
+                                "note": ""
+                            },
+                            {
+                                "id": 3,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:00",
+                                "subject": "Tiếng Việt",
+                                "teacher": "",
+                                "room": "1A",
+                                "note": ""
+                            },
+                            {
+                                "id": 4,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "Mỹ Thuật",
+                                "teacher": "",
+                                "room": "Phòng MT",
+                                "note": "Mang màu"
+                            },
+                            {
+                                "id": 5,
+                                "day": "Thu 4",
+                                "session": "chieu",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "Âm Nhạc",
+                                "teacher": "",
+                                "room": "Phòng Nhạc",
+                                "note": ""
+                            },
+                            {
+                                "id": 6,
+                                "day": "Thu 5",
+                                "session": "them",
+                                "period": 1,
+                                "time": "17:30",
+                                "subject": "Tiếng Anh Giao Tiếp",
+                                "teacher": "",
+                                "room": "TT Anh Ngữ",
+                                "note": "Cô Sarah"
+                            }
+                        ],
+                        "grades": [
+                            {
+                                "id": 1,
+                                "subject": "Toán Học",
+                                "mid1": 9.5,
+                                "final1": 10,
+                                "mid2": 9,
+                                "final2": 10,
+                                "note": ""
+                            },
+                            {
+                                "id": 2,
+                                "subject": "Tiếng Việt",
+                                "mid1": 8.5,
+                                "final1": 9,
+                                "mid2": 9,
+                                "final2": 9.5,
+                                "note": ""
+                            },
+                            {
+                                "id": 3,
+                                "subject": "Tiếng Anh",
+                                "mid1": 9,
+                                "final1": 9.5,
+                                "mid2": 9.5,
+                                "final2": 10,
+                                "note": ""
+                            },
+                            {
+                                "id": 4,
+                                "subject": "Mỹ Thuật",
+                                "mid1": 10,
+                                "final1": 10,
+                                "mid2": 9.5,
+                                "final2": 10,
+                                "note": ""
+                            }
                         ]
+                    },
+                    "2026-2027": {
+                        "school": "Trường THCS Tiên Du",
+                        "grade": "Lớp 6B",
+                        "teacherName": "Giang Thị Lý",
+                        "teacherPhone": "",
+                        "evaluation": {
+                            "academic": "Chưa xếp loại",
+                            "behavior": "Tốt",
+                            "reward": ""
+                        },
+                        "timetable": [
+                            {
+                                "id": 1,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "HĐTN, HN (Chào cờ)",
+                                "teacher": "Lý",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 2,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:15",
+                                "subject": "HĐTN, HN (Chủ đề)",
+                                "teacher": "Lý",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 3,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:10",
+                                "subject": "Toán",
+                                "teacher": "Dũng",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 4,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 4,
+                                "time": "10:05",
+                                "subject": "Tiếng Anh",
+                                "teacher": "Huyền",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 5,
+                                "day": "Thu 2",
+                                "session": "them",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "Toán (học thêm)",
+                                "teacher": "Thầy Dũng",
+                                "room": "Nhà thầy Dũng",
+                                "note": "14:00–16:00 · Ăn trưa nhà thầy Dũng"
+                            },
+                            {
+                                "id": 6,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "Ngữ văn",
+                                "teacher": "Dung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 7,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:15",
+                                "subject": "Ngữ văn",
+                                "teacher": "Dung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 8,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:10",
+                                "subject": "KHTN (Vật lí)",
+                                "teacher": "Hạnh",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 9,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 4,
+                                "time": "10:05",
+                                "subject": "Công nghệ",
+                                "teacher": "Hạnh",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 10,
+                                "day": "Thu 3",
+                                "session": "chieu",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "GDĐP",
+                                "teacher": "Q.Nhung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 11,
+                                "day": "Thu 3",
+                                "session": "chieu",
+                                "period": 2,
+                                "time": "14:55",
+                                "subject": "LS&ĐL (Sử)",
+                                "teacher": "Thành",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 12,
+                                "day": "Thu 3",
+                                "session": "chieu",
+                                "period": 3,
+                                "time": "15:50",
+                                "subject": "LS&ĐL (Địa)",
+                                "teacher": "Dung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 13,
+                                "day": "Thu 3",
+                                "session": "them",
+                                "period": 2,
+                                "time": "17:00",
+                                "subject": "Tiếng Anh (học thêm)",
+                                "teacher": "",
+                                "room": "",
+                                "note": "17:00–19:00"
+                            },
+                            {
+                                "id": 14,
+                                "day": "Thu 4",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "Nghệ thuật (Mĩ thuật)",
+                                "teacher": "Q.Nhung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 15,
+                                "day": "Thu 4",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:15",
+                                "subject": "Ngữ văn",
+                                "teacher": "Dung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 16,
+                                "day": "Thu 4",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:10",
+                                "subject": "Toán",
+                                "teacher": "Dũng",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 17,
+                                "day": "Thu 4",
+                                "session": "sang",
+                                "period": 4,
+                                "time": "10:05",
+                                "subject": "Tiếng Anh",
+                                "teacher": "Huyền",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 18,
+                                "day": "Thu 4",
+                                "session": "chieu",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "KHTN (Vật lí)",
+                                "teacher": "Hạnh",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 19,
+                                "day": "Thu 4",
+                                "session": "chieu",
+                                "period": 2,
+                                "time": "14:55",
+                                "subject": "Nghệ thuật (Âm nhạc)",
+                                "teacher": "Thu",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 20,
+                                "day": "Thu 4",
+                                "session": "chieu",
+                                "period": 3,
+                                "time": "15:50",
+                                "subject": "GDCD",
+                                "teacher": "Lanh",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 21,
+                                "day": "Thu 4",
+                                "session": "them",
+                                "period": 2,
+                                "time": "17:00",
+                                "subject": "Tiếng Anh (học thêm)",
+                                "teacher": "",
+                                "room": "",
+                                "note": "17:00–19:00"
+                            },
+                            {
+                                "id": 22,
+                                "day": "Thu 5",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "LS&ĐL (Sử)",
+                                "teacher": "Thành",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 23,
+                                "day": "Thu 5",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:15",
+                                "subject": "Toán",
+                                "teacher": "Dũng",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 24,
+                                "day": "Thu 5",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:10",
+                                "subject": "GDTC",
+                                "teacher": "Mai",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 25,
+                                "day": "Thu 5",
+                                "session": "sang",
+                                "period": 4,
+                                "time": "10:05",
+                                "subject": "GDTC",
+                                "teacher": "Mai",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 26,
+                                "day": "Thu 5",
+                                "session": "them",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "Ngữ văn (học thêm)",
+                                "teacher": "",
+                                "room": "Nhà thầy Dũng",
+                                "note": "14:00–17:10 · Ăn trưa nhà thầy Dũng"
+                            },
+                            {
+                                "id": 27,
+                                "day": "Thu 6",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:15",
+                                "subject": "Tiếng Anh",
+                                "teacher": "Huyền",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 28,
+                                "day": "Thu 6",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:15",
+                                "subject": "Tin học",
+                                "teacher": "Linh",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 29,
+                                "day": "Thu 6",
+                                "session": "sang",
+                                "period": 3,
+                                "time": "09:10",
+                                "subject": "KHTN (Hóa)",
+                                "teacher": "Lâm",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 30,
+                                "day": "Thu 6",
+                                "session": "sang",
+                                "period": 4,
+                                "time": "10:05",
+                                "subject": "Ngữ văn",
+                                "teacher": "Dung",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 31,
+                                "day": "Thu 6",
+                                "session": "chieu",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "Toán",
+                                "teacher": "Dũng",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 32,
+                                "day": "Thu 6",
+                                "session": "chieu",
+                                "period": 2,
+                                "time": "14:55",
+                                "subject": "KHTN (Sinh)",
+                                "teacher": "Lý",
+                                "room": "",
+                                "note": ""
+                            },
+                            {
+                                "id": 33,
+                                "day": "Thu 6",
+                                "session": "chieu",
+                                "period": 3,
+                                "time": "15:50",
+                                "subject": "HĐTN, HN (Sinh hoạt lớp)",
+                                "teacher": "Lý",
+                                "room": "",
+                                "note": ""
+                            }
+                        ],
+                        "grades": []
                     }
                 },
-                achievements: [
-                    { id: 1, title: 'Học Sinh Xuất Sắc Học Kỳ 1', year: '2023-2024', level: 'Trường', desc: 'Đạt danh hiệu học sinh giỏi toàn diện.' },
-                    { id: 2, title: 'Giải Nhất Vẽ Tranh Mùa Xuân', year: '2023-2024', level: 'Quận/Huyện', desc: 'Tác phẩm: Mùa xuân trên quê hương bé.' }
+                "achievements": [
+                    {
+                        "id": 1,
+                        "title": "Học Sinh Xuất Sắc Học Kỳ 1",
+                        "year": "2023-2024",
+                        "level": "Trường",
+                        "desc": "Đạt danh hiệu học sinh giỏi toàn diện."
+                    },
+                    {
+                        "id": 2,
+                        "title": "Giải Nhất Vẽ Tranh Mùa Xuân",
+                        "year": "2023-2024",
+                        "level": "Quận/Huyện",
+                        "desc": "Tác phẩm: Mùa xuân trên quê hương bé."
+                    }
                 ],
-                media: [
-                    { id: 1, type: 'image', title: 'Lễ Khai Giảng Lớp 1', url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600', date: '2023-09-05' },
-                    { id: 2, type: 'image', title: 'Ngày Hội Đọc Sách', url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600', date: '2023-11-20' }
-                ]
+                "media": [],
+                "plans": []
             },
             {
-                id: 'child_2',
-                name: 'Nguyễn Bích Ngọc',
-                birthday: '2015-09-20',
-                hometown: 'Đông Nguyên, Từ Sơn, Bắc Ninh',
-                idNumber: '027315005678',
-                idIssueDate: '2022-06-10',
-                phone: '0912345672',
-                grade: 'Lớp 3B',
-                school: 'Trường Tiểu Học Nguyễn Du',
-                avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=300',
-                academicYears: {
-                    '2023-2024': {
-                        school: 'Trường Tiểu Học Nguyễn Du',
-                        grade: 'Lớp 3B',
-                        teacherName: 'Cô Lê Thanh Hà',
-                        teacherPhone: '0933445566',
-                        evaluation: { academic: 'Xuất sắc', behavior: 'Tốt', reward: 'Học sinh Hoàn thành xuất sắc nhiệm vụ học tập' },
-                        timetable: [
-                            { id: 1, day: 'Thu 2', session: 'sang', period: 1, subject: 'Toán', time: '07:30', room: '3B', note: '' },
-                            { id: 2, day: 'Thu 3', session: 'sang', period: 2, subject: 'Tin Học', time: '08:30', room: 'Lab 1', note: '' },
-                            { id: 3, day: 'Thu 4', session: 'chieu', period: 1, subject: 'Tiếng Anh', time: '14:00', room: '3B', note: '' },
-                            { id: 4, day: 'Thu 6', session: 'them', period: 1, subject: 'Luyện Chữ Đẹp', time: '17:00', room: 'Nhà cô Hà', note: 'Bút máy' }
+                "id": "child_2",
+                "name": "Nguyễn Ngọc Anh Thư",
+                "birthday": "2021-07-09",
+                "phone": "",
+                "hometown": "thôn Ân Phú, phường Tiên Du, thành phố Bắc Ninh",
+                "idNumber": "",
+                "idIssueDate": "",
+                "grade": "Lớp 5 tuổi",
+                "school": "Trường mầm non Ngôi Sao",
+                "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=300",
+                "academicYears": {
+                    "2023-2024": {
+                        "school": "Trường Tiểu Học Nguyễn Du",
+                        "grade": "Lớp 3B",
+                        "teacherName": "Cô Lê Thanh Hà",
+                        "teacherPhone": "0933445566",
+                        "evaluation": {
+                            "academic": "Xuất sắc",
+                            "behavior": "Tốt",
+                            "reward": "Học sinh Hoàn thành xuất sắc nhiệm vụ học tập"
+                        },
+                        "timetable": [
+                            {
+                                "id": 1,
+                                "day": "Thu 2",
+                                "session": "sang",
+                                "period": 1,
+                                "time": "07:30",
+                                "subject": "Toán",
+                                "teacher": "",
+                                "room": "3B",
+                                "note": ""
+                            },
+                            {
+                                "id": 2,
+                                "day": "Thu 3",
+                                "session": "sang",
+                                "period": 2,
+                                "time": "08:30",
+                                "subject": "Tin Học",
+                                "teacher": "",
+                                "room": "Lab 1",
+                                "note": ""
+                            },
+                            {
+                                "id": 3,
+                                "day": "Thu 4",
+                                "session": "chieu",
+                                "period": 1,
+                                "time": "14:00",
+                                "subject": "Tiếng Anh",
+                                "teacher": "",
+                                "room": "3B",
+                                "note": ""
+                            },
+                            {
+                                "id": 4,
+                                "day": "Thu 6",
+                                "session": "them",
+                                "period": 1,
+                                "time": "17:00",
+                                "subject": "Luyện Chữ Đẹp",
+                                "teacher": "",
+                                "room": "Nhà cô Hà",
+                                "note": "Bút máy"
+                            }
                         ],
-                        grades: [
-                            { id: 1, subject: 'Toán Học', mid1: 9.0, final1: 9.5, mid2: 9.0, final2: 9.5 },
-                            { id: 2, subject: 'Tiếng Việt', mid1: 9.5, final1: 9.0, mid2: 9.5, final2: 9.5 },
-                            { id: 3, subject: 'Tin Học', mid1: 10, final1: 10, mid2: 10, final2: 10 }
+                        "grades": [
+                            {
+                                "id": 1,
+                                "subject": "Toán Học",
+                                "mid1": 9,
+                                "final1": 9.5,
+                                "mid2": 9,
+                                "final2": 9.5,
+                                "note": ""
+                            },
+                            {
+                                "id": 2,
+                                "subject": "Tiếng Việt",
+                                "mid1": 9.5,
+                                "final1": 9,
+                                "mid2": 9.5,
+                                "final2": 9.5,
+                                "note": ""
+                            },
+                            {
+                                "id": 3,
+                                "subject": "Tin Học",
+                                "mid1": 10,
+                                "final1": 10,
+                                "mid2": 10,
+                                "final2": 10,
+                                "note": ""
+                            }
                         ]
+                    },
+                    "2026-2027": {
+                        "school": "Trường mầm non Ngôi Sao",
+                        "grade": "Lớp 5 tuổi",
+                        "teacherName": "",
+                        "teacherPhone": "",
+                        "evaluation": {
+                            "academic": "Chưa xếp loại",
+                            "behavior": "Tốt",
+                            "reward": ""
+                        },
+                        "timetable": [],
+                        "grades": []
                     }
                 },
-                achievements: [
-                    { id: 1, title: 'Giải Vở Sạch Chữ Đẹp', year: '2023-2024', level: 'Trường', desc: 'Giải Nhì cấp trường hội thi Viết chữ đẹp.' }
+                "achievements": [
+                    {
+                        "id": 1,
+                        "title": "Giải Vở Sạch Chữ Đẹp",
+                        "year": "2023-2024",
+                        "level": "Trường",
+                        "desc": "Giải Nhì cấp trường hội thi Viết chữ đẹp."
+                    }
                 ],
-                media: [
-                    { id: 1, type: 'image', title: 'Thi Viết Chữ Đẹp', url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600', date: '2023-10-15' }
-                ]
+                "media": [
+                    {
+                        "id": 1,
+                        "type": "image",
+                        "title": "Thi Viết Chữ Đẹp",
+                        "url": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600",
+                        "urls": [
+                            "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600"
+                        ],
+                        "date": "2023-10-15"
+                    }
+                ],
+                "plans": []
             }
         ];
 
@@ -1751,7 +2345,6 @@ function guiNhacLich() {
             loadSyncCfg();
             loadData();
             migrateData();
-            keepFirstTwoKidsOnce();
             loadUiState();
             renderKidTabs();
             renderYearSelector();
@@ -1761,18 +2354,26 @@ function guiNhacLich() {
             setTimeout(initialSync, 300);
         };
 
+        // Mốc của bộ dữ liệu mặc định ghi trong file. Khi mình cập nhật lại dữ liệu mặc định thì đổi mốc này:
+        // trình duyệt nào còn giữ dữ liệu cũ hơn sẽ tự thay bằng bản trong file ngay khi mở (không phải chờ đồng bộ).
+        const DATA_EPOCH = '2026-11-12T10:45:20.827Z';
+        const SNAPSHOT_TS = 1794480320827;   // = thời điểm lưu của bản Google Sheet dùng làm mặc định
+
         function loadData() {
-            const saved = localStorage.getItem('family_students_data_v2');
-            if (saved) {
-                try {
-                    studentsData = JSON.parse(saved);
-                } catch(e) {
-                    studentsData = DEFAULT_STUDENTS;
-                }
-            } else {
-                studentsData = DEFAULT_STUDENTS;
-                saveData();
+            let saved = null, epoch = null;
+            try { saved = localStorage.getItem('family_students_data_v2'); epoch = localStorage.getItem('family_data_epoch'); } catch (e) {}
+            if (saved && epoch === DATA_EPOCH) {
+                try { studentsData = JSON.parse(saved); return; } catch (e) {}
             }
+            // Lần đầu mở bản file này: dùng dữ liệu trong file (dữ liệu cũ trên máy được cất vào bản sao lưu)
+            if (saved) { try { localStorage.setItem('family_students_data_backup', saved); } catch (e) {} }
+            studentsData = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+            saveData();
+            syncMeta.remoteTs = SNAPSHOT_TS;               // đã khớp với bản Sheet lúc tạo file
+            syncMeta.syncedLocalTs = syncMeta.localTs;     // không tính là thay đổi chưa lưu
+            syncMeta.knownImgs = [];
+            saveSyncMeta();
+            try { localStorage.setItem('family_data_epoch', DATA_EPOCH); } catch (e) {}
         }
 
         function saveData() {
