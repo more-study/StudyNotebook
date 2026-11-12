@@ -15,6 +15,15 @@
         tailwind.config = {
             theme: {
                 extend: {
+                    // Chữ to hơn ~1px ở mọi cỡ (giữ nguyên khoảng cách, bố cục)
+                    fontSize: {
+                        xs:   ['0.8125rem', { lineHeight: '1.15rem' }],   // 13px (cũ 12)
+                        sm:   ['0.9375rem', { lineHeight: '1.35rem' }],   // 15px (cũ 14)
+                        base: ['1.0625rem', { lineHeight: '1.6rem' }],    // 17px (cũ 16)
+                        lg:   ['1.1875rem', { lineHeight: '1.75rem' }],   // 19px (cũ 18)
+                        xl:   ['1.3125rem', { lineHeight: '1.85rem' }],   // 21px (cũ 20)
+                        '2xl': ['1.5625rem', { lineHeight: '2rem' }]      // 25px (cũ 24)
+                    },
                     colors: {
                         pastel: {
                             blue: '#E0F2FE',
@@ -129,14 +138,14 @@
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <h4 id="overviewTodayTitle" class="font-extrabold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-sun text-amber-500"></i> Hôm nay</h4>
-                    <span id="overviewTodayCount" class="text-[11px] font-bold text-slate-400"></span>
+                    <span id="overviewTodayCount" class="text-[12px] font-bold text-slate-400"></span>
                 </div>
                 <div id="overviewToday"></div>
             </div>
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <h4 class="font-extrabold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-bell text-indigo-500"></i> Kế hoạch sắp tới của cả nhà</h4>
-                    <button onclick="openPlanModal(null, null)" class="text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-full"><i class="fa-solid fa-plus mr-1"></i>Thêm lịch hẹn</button>
+                    <button onclick="openPlanModal(null, null)" class="text-[12px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-full"><i class="fa-solid fa-plus mr-1"></i>Thêm lịch hẹn</button>
                 </div>
                 <div class="notif-bar mb-3"></div>
                 <div id="overviewPlans"></div>
@@ -158,8 +167,8 @@
                         </div>
 
                         <!-- Basic Personal Info Grid -->
-                        <button id="bannerDetailsToggle" type="button" onclick="toggleBannerDetails()" class="sm:hidden text-[11px] font-bold text-indigo-100 bg-white/10 border border-white/15 rounded-full px-3 py-1.5 flex items-center gap-1.5">
-                            <i class="fa-solid fa-chevron-down text-[9px] transition-transform"></i><span>Xem thông tin cá nhân</span>
+                        <button id="bannerDetailsToggle" type="button" onclick="toggleBannerDetails()" class="sm:hidden text-[12px] font-bold text-indigo-100 bg-white/10 border border-white/15 rounded-full px-3 py-1.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform"></i><span>Xem thông tin cá nhân</span>
                         </button>
                         <div id="bannerDetails" class="grid hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-indigo-100/95 bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10 text-left">
                             <div class="flex items-center gap-2 truncate">
@@ -204,11 +213,11 @@
                     <!-- Quick Stats Badge (Chỉ giữ Bằng khen & Kỷ niệm) -->
                     <div class="grid grid-cols-2 gap-3 text-center">
                         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
-                            <span class="block text-[11px] text-indigo-200 font-bold uppercase tracking-wider">Bằng Khen</span>
+                            <span class="block text-[12px] text-indigo-200 font-bold uppercase tracking-wider">Bằng Khen</span>
                             <span id="bannerAwardsCount" class="text-xl font-black text-pink-300">--</span>
                         </div>
                         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
-                            <span class="block text-[11px] text-indigo-200 font-bold uppercase tracking-wider">Kỷ Niệm</span>
+                            <span class="block text-[12px] text-indigo-200 font-bold uppercase tracking-wider">Kỷ Niệm</span>
                             <span id="bannerMediaCount" class="text-xl font-black text-cyan-300">--</span>
                         </div>
                     </div>
@@ -332,19 +341,19 @@
                 <!-- Teacher & Class Info Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/60 p-4 rounded-2xl border border-slate-200">
                     <div>
-                        <span class="block text-[11px] font-bold text-slate-400 uppercase">Trường học</span>
+                        <span class="block text-[12px] font-bold text-slate-400 uppercase">Trường học</span>
                         <span id="infoYearSchool" class="text-xs font-extrabold text-slate-800">--</span>
                     </div>
                     <div>
-                        <span class="block text-[11px] font-bold text-slate-400 uppercase">Lớp</span>
+                        <span class="block text-[12px] font-bold text-slate-400 uppercase">Lớp</span>
                         <span id="infoYearGrade" class="text-xs font-extrabold text-slate-800">--</span>
                     </div>
                     <div>
-                        <span class="block text-[11px] font-bold text-slate-400 uppercase">GV Chủ Nhiệm</span>
+                        <span class="block text-[12px] font-bold text-slate-400 uppercase">GV Chủ Nhiệm</span>
                         <span id="infoTeacherName" class="text-xs font-extrabold text-indigo-600">--</span>
                     </div>
                     <div>
-                        <span class="block text-[11px] font-bold text-slate-400 uppercase">SĐT Chủ Nhiệm</span>
+                        <span class="block text-[12px] font-bold text-slate-400 uppercase">SĐT Chủ Nhiệm</span>
                         <span id="infoTeacherPhone" class="text-xs font-extrabold text-emerald-600">--</span>
                     </div>
                 </div>
@@ -518,7 +527,7 @@
                 </div>
             </div>
             <div class="notif-bar"></div>
-            <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2"><i class="fa-solid fa-envelope mr-1 text-sky-600"></i><b>Nhận email nhắc lịch kể cả khi không mở app:</b> mở file Google Sheet → menu <b>📧 Nhắc lịch</b> → <b>Bật gửi email nhắc tự động</b> (cần đã kết nối Google Sheet ở nút ☁️). Mỗi sáng còn có email tóm tắt lịch hẹn hôm nay và ngày mai.</div>
+            <div class="text-[12px] text-slate-600 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2"><i class="fa-solid fa-envelope mr-1 text-sky-600"></i><b>Nhận email nhắc lịch kể cả khi không mở app:</b> mở file Google Sheet → menu <b>📧 Nhắc lịch</b> → <b>Bật gửi email nhắc tự động</b> (cần đã kết nối Google Sheet ở nút ☁️). Mỗi sáng còn có email tóm tắt lịch hẹn hôm nay và ngày mai.</div>
             <div id="plansTodo" class="space-y-2"></div>
             <details id="plansDoneBox" class="bg-white rounded-2xl border border-slate-200 px-4 py-3">
                 <summary class="text-xs font-extrabold text-slate-500 cursor-pointer">Đã xong / đã hoàn thành (<span id="plansDoneCount">0</span>)</summary>
@@ -872,7 +881,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Dán link ảnh / video (mỗi link 1 dòng)</label>
                     <textarea id="mediaUrl" rows="2" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
-                    <p class="text-[11px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh</b> từ thiết bị (ảnh tự thu nhỏ cho nhẹ). Bấm vào ảnh để đặt làm ảnh bìa.</p>
+                    <p class="text-[12px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh</b> từ thiết bị (ảnh tự thu nhỏ cho nhẹ). Bấm vào ảnh để đặt làm ảnh bìa.</p>
                     <input type="file" id="mediaFile" accept="image/*,video/*" multiple onchange="handleMediaUpload(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold hover:file:bg-indigo-100">
                     <div id="mediaPreview" class="grid grid-cols-4 gap-2 mt-3"></div>
                 </div>
@@ -901,7 +910,7 @@
                 <label class="block text-xs font-bold text-slate-600">Chọn file (.txt / .tsv / .csv) hoặc dán nội dung bên dưới</label>
                 <input type="file" accept=".txt,.tsv,.csv,text/plain" onchange="ttImportFile(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold">
                 <textarea id="ttImportText" rows="7" oninput="previewTtImport()" placeholder="Mỗi dòng 1 tiết, các cột cách nhau bằng phím Tab (copy từ Excel/Google Sheet) hoặc dấu ;&#10;Thứ | Buổi | Tiết | Giờ | Môn | Giáo viên | Phòng / Nơi học | Ghi chú&#10;Thứ Hai	Sáng	1	07:15	Toán	Thầy Dũng		Mang compa" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                <p class="text-[11px] text-slate-400">Buổi: Sáng / Chiều / Học thêm. Tiết: số (sáng 1–5, chiều 1–4, học thêm ca 1–2). <button type="button" onclick="downloadTtTemplate()" class="text-indigo-600 font-bold underline">Tải file mẫu</button></p>
+                <p class="text-[12px] text-slate-400">Buổi: Sáng / Chiều / Học thêm. Tiết: số (sáng 1–5, chiều 1–4, học thêm ca 1–2). <button type="button" onclick="downloadTtTemplate()" class="text-indigo-600 font-bold underline">Tải file mẫu</button></p>
             </div>
             <div class="flex flex-wrap gap-4 text-xs font-bold text-slate-600">
                 <label class="flex items-center gap-1.5"><input type="radio" name="ttImportMode" value="replace" checked> Thay toàn bộ TKB năm này</label>
@@ -957,10 +966,10 @@
                 <button onclick="syncPullNow()" class="px-3 py-2.5 text-xs font-bold bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>Tải về từ Sheet</button>
             </div>
             <button onclick="syncDiagnose()" class="w-full px-3 py-2 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200"><i class="fa-solid fa-stethoscope mr-1"></i>Chẩn đoán lỗi kết nối</button>
-            <pre id="syncDiag" class="hidden whitespace-pre-wrap break-words text-[11px] leading-relaxed bg-slate-900 text-slate-100 rounded-xl p-3"></pre>
-            <p class="text-[11px] text-slate-400 leading-relaxed">Các bảng trong Sheet: HocSinh, TongKetNam, ThoiKhoaBieu, BangDiem, ThanhTich, KeHoach, KyNiem. Thêm dòng mới để thêm dữ liệu; cột "Bé" phải ghi đúng họ tên đã có ở HocSinh. Google Sheet là nơi lưu chính: bạn sửa trong app hay sửa thẳng trong Sheet đều được. Sửa trong Sheet xong, mở lại app (hoặc bấm "Tải về từ Sheet") để cập nhật. Địa chỉ URL + mật khẩu chỉ lưu trên trình duyệt này.</p>
+            <pre id="syncDiag" class="hidden whitespace-pre-wrap break-words text-[12px] leading-relaxed bg-slate-900 text-slate-100 rounded-xl p-3"></pre>
+            <p class="text-[12px] text-slate-400 leading-relaxed">Các bảng trong Sheet: HocSinh, TongKetNam, ThoiKhoaBieu, BangDiem, ThanhTich, KeHoach, KyNiem. Thêm dòng mới để thêm dữ liệu; cột "Bé" phải ghi đúng họ tên đã có ở HocSinh. Google Sheet là nơi lưu chính: bạn sửa trong app hay sửa thẳng trong Sheet đều được. Sửa trong Sheet xong, mở lại app (hoặc bấm "Tải về từ Sheet") để cập nhật. Địa chỉ URL + mật khẩu chỉ lưu trên trình duyệt này.</p>
             <div class="flex items-center justify-between pt-1 border-t">
-                <button onclick="syncDisconnect()" class="text-[11px] font-bold text-slate-400 hover:text-rose-600">Ngắt kết nối</button>
+                <button onclick="syncDisconnect()" class="text-[12px] font-bold text-slate-400 hover:text-rose-600">Ngắt kết nối</button>
             </div>
         </div>
     </div>
@@ -1749,7 +1758,7 @@ function guiNhacLich() {
                     <span class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center flex-shrink-0 ${isOverview ? 'ring-2 ring-white/60' : ''}"><i class="fa-solid fa-users text-xs"></i></span>
                     <span class="min-w-0 flex-1">
                         <span class="block text-xs sm:text-sm font-extrabold truncate leading-tight">Cả nhà</span>
-                        <span class="block text-[10px] sm:text-[11px] font-bold truncate mt-0.5 ${isOverview ? 'text-indigo-100' : 'text-slate-400'}">${studentsData.length} bé</span>
+                        <span class="block text-[11px] sm:text-[12px] font-bold truncate mt-0.5 ${isOverview ? 'text-indigo-100' : 'text-slate-400'}">${studentsData.length} bé</span>
                     </span>
                 </button>`;
 
@@ -1762,7 +1771,7 @@ function guiNhacLich() {
                         <img src="${esc(student.avatar)}" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${active ? 'border-white/60' : 'border-white'} flex-shrink-0" onerror="this.src='https://placehold.co/100x100'">
                         <span class="min-w-0 flex-1">
                             <span class="block text-xs sm:text-sm font-extrabold truncate leading-tight"><span class="sm:hidden">${esc(shortName(student.name))}</span><span class="hidden sm:inline">${esc(student.name)}</span></span>
-                            <span class="block text-[10px] sm:text-[11px] font-bold truncate mt-0.5 ${active ? 'text-indigo-100' : 'text-slate-400'}">${esc(displayGrade)}</span>
+                            <span class="block text-[11px] sm:text-[12px] font-bold truncate mt-0.5 ${active ? 'text-indigo-100' : 'text-slate-400'}">${esc(displayGrade)}</span>
                         </span>
                     </button>`;
             });
@@ -1845,12 +1854,12 @@ function guiNhacLich() {
                     <img src="${esc(s.avatar)}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-white" onerror="this.src='https://placehold.co/100x100'">
                     <span class="min-w-0 flex-1">
                         <span class="flex items-center gap-1.5 text-sm font-extrabold text-slate-800 truncate"><span class="w-2 h-2 rounded-full ${kidAccent(i).dot}"></span>${esc(shortName(s.name))}</span>
-                        <span class="block text-[11px] text-slate-500 truncate">${main ? `${main} tiết trên lớp${sang && chieu ? ` (sáng ${sang} · chiều ${chieu})` : sang ? ' (buổi sáng)' : ' (buổi chiều)'}` : 'Không có tiết trên lớp'}</span>
-                        <span class="block text-[11px] ${extra.length ? 'text-purple-700' : 'text-slate-400'} truncate">${extra.length ? `Học thêm ${extra.length} môn: ${esc(extra.join(', '))}` : 'Không học thêm'}</span>
+                        <span class="block text-[12px] text-slate-500 truncate">${main ? `${main} tiết trên lớp${sang && chieu ? ` (sáng ${sang} · chiều ${chieu})` : sang ? ' (buổi sáng)' : ' (buổi chiều)'}` : 'Không có tiết trên lớp'}</span>
+                        <span class="block text-[12px] ${extra.length ? 'text-purple-700' : 'text-slate-400'} truncate">${extra.length ? `Học thêm ${extra.length} môn: ${esc(extra.join(', '))}` : 'Không học thêm'}</span>
                     </span>
                     <span class="flex-shrink-0 text-center">
                         <span class="block text-lg font-black text-indigo-600 leading-none">${main}</span>
-                        <span class="block text-[10px] font-bold text-slate-400">tiết</span>
+                        <span class="block text-[11px] font-bold text-slate-400">tiết</span>
                     </span>
                 </button>`).join('') + `</div>`;
 
@@ -1861,8 +1870,8 @@ function guiNhacLich() {
                 const yd = st.yd || {};
                 const ev = yd.evaluation || {};
                 const todayItems = (((s.academicYears || {})[CURRENT_YEAR] || {}).timetable || []).filter(it => it.day === TODAY_KEY).sort((a, b) => lessonStart(a).localeCompare(lessonStart(b)));
-                const chips = todayItems.slice(0, 3).map(it => `<span class="inline-flex items-center gap-1 text-[11px] font-bold bg-slate-100 text-slate-700 rounded-full px-2.5 py-1"><span class="text-slate-400">${esc(lessonStart(it) === '99:99' ? '' : lessonStart(it))}</span>${esc(it.subject)}</span>`).join('');
-                const more = todayItems.length > 3 ? `<span class="text-[11px] font-bold text-slate-400 py-1">+${todayItems.length - 3}</span>` : '';
+                const chips = todayItems.slice(0, 3).map(it => `<span class="inline-flex items-center gap-1 text-[12px] font-bold bg-slate-100 text-slate-700 rounded-full px-2.5 py-1"><span class="text-slate-400">${esc(lessonStart(it) === '99:99' ? '' : lessonStart(it))}</span>${esc(it.subject)}</span>`).join('');
+                const more = todayItems.length > 3 ? `<span class="text-[12px] font-bold text-slate-400 py-1">+${todayItems.length - 3}</span>` : '';
                 return `
                     <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                         <div class="h-1.5 bg-gradient-to-r ${acc.bar}"></div>
@@ -1871,27 +1880,27 @@ function guiNhacLich() {
                             <span class="min-w-0 flex-1">
                                 <span class="block font-extrabold text-slate-800 truncate">${esc(s.name)}</span>
                                 <span class="block text-xs text-slate-500 truncate">${esc(yd.grade || s.grade || '')} · ${esc(yd.school || s.school || '')}</span>
-                                <span class="block text-[11px] text-slate-400 truncate mt-0.5">GVCN: ${esc(yd.teacherName || 'chưa cập nhật')}</span>
+                                <span class="block text-[12px] text-slate-400 truncate mt-0.5">GVCN: ${esc(yd.teacherName || 'chưa cập nhật')}</span>
                             </span>
                             <i class="fa-solid fa-chevron-right text-slate-300"></i>
                         </button>
                         <div class="grid grid-cols-3 gap-2 px-4">
                             <div class="rounded-2xl p-2.5 text-center ${scoreClass(st.avg)}">
                                 <div class="text-lg font-black leading-tight">${st.avg !== null ? st.avg.toFixed(1) : '--'}</div>
-                                <div class="text-[10px] font-bold opacity-80">ĐTB năm</div>
+                                <div class="text-[11px] font-bold opacity-80">ĐTB năm</div>
                             </div>
                             <div class="rounded-2xl p-2.5 text-center bg-indigo-50 text-indigo-700">
                                 <div class="text-xs font-black leading-tight pt-1 truncate">${esc(ev.academic || '--')}</div>
-                                <div class="text-[10px] font-bold opacity-80 mt-1">Học lực</div>
+                                <div class="text-[11px] font-bold opacity-80 mt-1">Học lực</div>
                             </div>
                             <div class="rounded-2xl p-2.5 text-center bg-amber-50 text-amber-700">
                                 <div class="text-lg font-black leading-tight">${(s.achievements || []).length}</div>
-                                <div class="text-[10px] font-bold opacity-80">Thành tích</div>
+                                <div class="text-[11px] font-bold opacity-80">Thành tích</div>
                             </div>
                         </div>
                         <div class="px-4 pt-3 pb-4 mt-auto space-y-3">
                             <div>
-                                <div class="text-[11px] font-extrabold text-slate-400 uppercase mb-1.5">Hôm nay</div>
+                                <div class="text-[12px] font-extrabold text-slate-400 uppercase mb-1.5">Hôm nay</div>
                                 <div class="text-xs text-slate-600">${(() => { const t = todaySummary(s); return (t.main ? `<b>${t.main}</b> tiết trên lớp` : 'Không có tiết trên lớp') + ' · ' + (t.extra.length ? `<span class="text-purple-700">học thêm <b>${t.extra.length}</b> môn (${esc(t.extra.join(', '))})</span>` : 'không học thêm'); })()}</div>
                             </div>
                             <div class="grid grid-cols-3 gap-2">
@@ -1950,7 +1959,7 @@ function guiNhacLich() {
             if (!isOverview) openEvaluationModal();   // điền luôn trường, lớp, giáo viên của năm đó
         }
 
-        const TAB_BASE = 'tab-btn flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 py-2 md:px-4 md:py-2 md:rounded-xl text-[10px] md:text-sm transition border-t-2 md:border-t-0';
+        const TAB_BASE = 'tab-btn flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 py-2 md:px-4 md:py-2 md:rounded-xl text-[11px] md:text-sm transition border-t-2 md:border-t-0';
         const TAB_ON = ' text-indigo-600 font-extrabold border-indigo-600 md:bg-white md:shadow-sm';
         const TAB_OFF = ' text-slate-500 font-bold border-transparent hover:text-slate-800';
 
@@ -2027,14 +2036,14 @@ function guiNhacLich() {
                 const sel = k === ttMobileDay, today = k === TODAY_KEY;
                 return `<button onclick="setTtDay('${k}')" class="flex flex-col items-center py-2 rounded-2xl border text-xs font-extrabold transition ${sel ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-600 border-slate-200'} ${today && !sel ? 'ring-2 ring-indigo-300' : ''}">
                     <span>${DAY_SHORT[k]}</span>
-                    <span class="mt-0.5 text-[10px] font-bold ${sel ? 'text-indigo-100' : 'text-slate-400'}">${n ? n + ' tiết' : '—'}</span>
+                    <span class="mt-0.5 text-[11px] font-bold ${sel ? 'text-indigo-100' : 'text-slate-400'}">${n ? n + ' tiết' : '—'}</span>
                 </button>`;
             }).join('');
 
             const dayItems = items.filter(i => i.day === ttMobileDay);
             let html = `<div class="flex items-center justify-between">
-                <h4 class="font-extrabold text-slate-800 text-sm">${DAY_FULL[ttMobileDay]}${ttMobileDay === TODAY_KEY ? ' <span class="ml-1 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full align-middle">Hôm nay</span>' : ''}</h4>
-                <span class="text-[11px] text-slate-400">${dayItems.length} tiết/ca</span></div>`;
+                <h4 class="font-extrabold text-slate-800 text-sm">${DAY_FULL[ttMobileDay]}${ttMobileDay === TODAY_KEY ? ' <span class="ml-1 text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full align-middle">Hôm nay</span>' : ''}</h4>
+                <span class="text-[12px] text-slate-400">${dayItems.length} tiết/ca</span></div>`;
 
             SESSIONS.forEach(ses => {
                 const its = dayItems.filter(i => i.session === ses.key).sort((a, b) => Number(a.period) - Number(b.period));
@@ -2044,7 +2053,7 @@ function guiNhacLich() {
                 html += `<div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="flex items-center gap-2 text-xs font-extrabold text-slate-600"><span class="w-2.5 h-2.5 rounded-full ${ses.dot}"></span>${ses.label}</span>
-                        <button onclick="openTimetableModal('${ttMobileDay}','${ses.key}',${nextPeriod})" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-plus mr-1"></i>Thêm</button>
+                        <button onclick="openTimetableModal('${ttMobileDay}','${ses.key}',${nextPeriod})" class="text-[12px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-plus mr-1"></i>Thêm</button>
                     </div>`;
                 if (!its.length) html += `<div class="text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl px-3 py-3">Trống</div>`;
                 its.forEach(it => {
@@ -2052,12 +2061,12 @@ function guiNhacLich() {
                     const start = it.time || (slot ? slot.defaultTime.split(' - ')[0] : '');
                     html += `<div onclick="openTimetableModal('${ttMobileDay}','${ses.key}',${it.period},${it.id})" class="flex items-stretch gap-3 p-3 rounded-2xl border ${ses.card} cursor-pointer active:scale-[.99] transition">
                         <div class="w-16 text-center flex-shrink-0 border-r border-black/10 pr-3 flex flex-col justify-center">
-                            <div class="text-[10px] font-bold opacity-70 leading-tight">${esc(slot ? slot.label : 'Tiết ' + it.period)}</div>
+                            <div class="text-[11px] font-bold opacity-70 leading-tight">${esc(slot ? slot.label : 'Tiết ' + it.period)}</div>
                             <div class="text-sm font-extrabold">${esc(start)}</div>
                         </div>
                         <div class="min-w-0 flex-1 flex flex-col justify-center">
                             <div class="font-extrabold text-sm leading-snug">${esc(it.subject)}</div>
-                            <div class="text-[11px] opacity-80 mt-0.5 flex flex-wrap gap-x-3">
+                            <div class="text-[12px] opacity-80 mt-0.5 flex flex-wrap gap-x-3">
                                 ${it.teacher ? `<span><i class="fa-solid fa-chalkboard-user mr-1"></i>${esc(it.teacher)}</span>` : ''}
                                 ${it.room ? `<span><i class="fa-solid fa-location-dot mr-1"></i>${esc(it.room)}</span>` : ''}
                                 ${it.note ? `<span><i class="fa-solid fa-note-sticky mr-1"></i>${esc(it.note)}</span>` : ''}
@@ -2086,7 +2095,7 @@ function guiNhacLich() {
                 if (isFirstOfSession) {
                     rowHtml += `<td rowspan="${sessionCount}" class="p-2.5 border-r border-slate-200 text-center font-extrabold uppercase tracking-wide ${slot.sessionColor}">${slot.sessionLabel}</td>`;
                 }
-                rowHtml += `<td class="p-2 border-r border-slate-200 text-center bg-slate-50/40 font-bold text-slate-700">${slot.label}<div class="text-[10px] font-semibold text-slate-400 mt-0.5 whitespace-nowrap">${slotTimeLabel(items, slot)}</div></td>`;
+                rowHtml += `<td class="p-2 border-r border-slate-200 text-center bg-slate-50/40 font-bold text-slate-700">${slot.label}<div class="text-[11px] font-semibold text-slate-400 mt-0.5 whitespace-nowrap">${slotTimeLabel(items, slot)}</div></td>`;
 
                 DAYS_KEYS.forEach(dayKey => {
                     const cellItem = items.find(i => i.day === dayKey && i.session === slot.session && Number(i.period) === slot.period);
@@ -2101,9 +2110,9 @@ function guiNhacLich() {
                             <td class="p-1.5 border-r border-slate-200 align-top ${dayKey === TODAY_KEY ? 'bg-indigo-50/50' : ''}">
                                 <div onclick="openTimetableModal('${dayKey}', '${slot.session}', ${slot.period}, ${cellItem.id})" class="p-2 rounded-xl border ${badgeStyle} cursor-pointer transition shadow-2xs min-h-[54px] flex flex-col justify-center">
                                     <div class="font-extrabold text-xs leading-snug">${esc(cellItem.subject)}</div>
-                                    ${cellItem.teacher ? `<div class="text-[11px] opacity-80 mt-0.5 font-semibold truncate"><i class="fa-solid fa-chalkboard-user mr-1 text-[10px]"></i>${esc(cellItem.teacher)}</div>` : ''}
-                                    ${cellItem.room ? `<div class="text-[10px] opacity-70 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${esc(cellItem.room)}</div>` : ''}
-                                    ${cellItem.note ? `<div class="text-[10px] mt-1 px-1.5 py-0.5 rounded-md bg-white/70 text-slate-600 line-clamp-2" title="${esc(cellItem.note)}"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(cellItem.note)}</div>` : ''}
+                                    ${cellItem.teacher ? `<div class="text-[12px] opacity-80 mt-0.5 font-semibold truncate"><i class="fa-solid fa-chalkboard-user mr-1 text-[11px]"></i>${esc(cellItem.teacher)}</div>` : ''}
+                                    ${cellItem.room ? `<div class="text-[11px] opacity-70 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${esc(cellItem.room)}</div>` : ''}
+                                    ${cellItem.note ? `<div class="text-[11px] mt-1 px-1.5 py-0.5 rounded-md bg-white/70 text-slate-600 line-clamp-2" title="${esc(cellItem.note)}"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(cellItem.note)}</div>` : ''}
                                 </div>
                             </td>
                         `;
@@ -2243,7 +2252,7 @@ function guiNhacLich() {
                 cardsHtml += `
                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <div class="min-w-0"><h5 class="font-extrabold text-slate-800 text-sm truncate">${esc(g.subject)}</h5>${g.note ? `<div class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</div>
+                            <div class="min-w-0"><h5 class="font-extrabold text-slate-800 text-sm truncate">${esc(g.subject)}</h5>${g.note ? `<div class="text-[12px] text-slate-400 truncate"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</div>
                             <div class="flex items-center gap-1 flex-shrink-0">
                                 <span class="text-sm font-black px-2.5 py-1 rounded-xl ${scoreClass(yearAvg)}" title="ĐTB cả năm">${yearAvg !== null ? yearAvg.toFixed(1) : '--'}</span>
                                 <button onclick="openGradeModal(${g.id})" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg" title="Sửa điểm"><i class="fa-solid fa-pen"></i></button>
@@ -2253,16 +2262,16 @@ function guiNhacLich() {
                         <div class="grid grid-cols-2 gap-2 mt-3 text-center">
                             ${[['Học kỳ 1', g.mid1, g.final1, hk1], ['Học kỳ 2', g.mid2, g.final2, hk2]].map(([t, m, f, h]) => `
                             <div class="bg-slate-50 rounded-xl p-2.5">
-                                <div class="text-[10px] font-bold text-slate-400 uppercase">${t}</div>
+                                <div class="text-[11px] font-bold text-slate-400 uppercase">${t}</div>
                                 <div class="text-lg font-black text-indigo-600 leading-tight">${h !== null ? h.toFixed(1) : '--'}</div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">GK ${m ?? '--'} · CK ${f ?? '--'}</div>
+                                <div class="text-[12px] text-slate-500 mt-0.5">GK ${m ?? '--'} · CK ${f ?? '--'}</div>
                             </div>`).join('')}
                         </div>
                     </div>`;
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4 font-bold text-slate-800 cursor-pointer hover:text-indigo-600" onclick="openGradeModal(${g.id})" title="Bấm để sửa điểm">${esc(g.subject)} <i class="fa-solid fa-pen text-[10px] text-slate-300"></i>${g.note ? `<div class="text-[11px] font-medium text-slate-400 mt-0.5"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</td>
+                        <td class="p-4 font-bold text-slate-800 cursor-pointer hover:text-indigo-600" onclick="openGradeModal(${g.id})" title="Bấm để sửa điểm">${esc(g.subject)} <i class="fa-solid fa-pen text-[11px] text-slate-300"></i>${g.note ? `<div class="text-[12px] font-medium text-slate-400 mt-0.5"><i class="fa-solid fa-note-sticky mr-1 text-amber-500"></i>${esc(g.note)}</div>` : ''}</td>
                         <td class="p-4 text-center text-slate-600">${g.mid1 ?? '--'}</td>
                         <td class="p-4 text-center text-slate-600">${g.final1 ?? '--'}</td>
                         <td class="p-4 text-center font-extrabold text-indigo-600 bg-indigo-50/30">${hk1 !== null ? hk1.toFixed(1) : '--'}</td>
@@ -2436,7 +2445,7 @@ function guiNhacLich() {
                                 <i class="fa-solid fa-trophy"></i>
                             </div>
                             <div class="pr-14">
-                                <span class="inline-block bg-indigo-50 text-indigo-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase mb-1">Cấp ${ach.level} • ${ach.year}</span>
+                                <span class="inline-block bg-indigo-50 text-indigo-600 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase mb-1">Cấp ${ach.level} • ${ach.year}</span>
                                 <h4 class="font-extrabold text-slate-800 text-sm leading-snug">${ach.title}</h4>
                             </div>
                         </div>
@@ -2515,7 +2524,7 @@ function guiNhacLich() {
                                 ? `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`
                                 : `<img src="${esc(mediaUrls(item)[0] || '')}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">`
                             }
-                            ${mediaUrls(item).length > 1 ? `<span class="absolute bottom-2 left-2 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-images mr-1"></i>${mediaUrls(item).length}</span>` : ''}
+                            ${mediaUrls(item).length > 1 ? `<span class="absolute bottom-2 left-2 bg-slate-900/70 text-white text-[12px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-images mr-1"></i>${mediaUrls(item).length}</span>` : ''}
                             <button onclick="event.stopPropagation(); openMediaModal(${item.id})" class="absolute top-2 right-12 sm:right-10 bg-slate-900/60 hover:bg-indigo-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="event.stopPropagation(); deleteMediaItem(${item.id})" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-rose-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition">
                                 <i class="fa-solid fa-trash"></i>
@@ -2523,7 +2532,7 @@ function guiNhacLich() {
                         </div>
                         <div class="p-3 flex-grow flex flex-col justify-between">
                             <h5 class="font-bold text-xs text-slate-800 line-clamp-1">${esc(item.title)}</h5>
-                            <span class="text-[11px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.date}</span>
+                            <span class="text-[12px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.date}</span>
                         </div>
                     </div>
                 `;
@@ -2579,7 +2588,7 @@ function guiNhacLich() {
             const files = [...(e.target.files || [])];
             if (!files.length) return;
             const box = document.getElementById('mediaPreview');
-            box.insertAdjacentHTML('beforeend', `<div id="mediaLoading" class="col-span-4 text-[11px] text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý ${files.length} tệp...</div>`);
+            box.insertAdjacentHTML('beforeend', `<div id="mediaLoading" class="col-span-4 text-[12px] text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý ${files.length} tệp...</div>`);
             for (const f of files) {
                 if (f.type.startsWith('video/')) {
                     if (f.size > 8 * 1024 * 1024) { alert(`Video "${f.name}" quá lớn để lưu trong app. Hãy tải lên YouTube / Google Drive rồi dán link.`); continue; }
@@ -2600,9 +2609,9 @@ function guiNhacLich() {
                     ${/^data:video|\.(mp4|webm|mov)(\?|$)|youtube|youtu\.be|drive\.google/i.test(u)
                         ? `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xl cursor-pointer" onclick="setMediaCover(${i})"><i class="fa-solid fa-circle-play"></i></div>`
                         : `<img src="${esc(u)}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.src='https://placehold.co/200x200?text=Link'">`}
-                    ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-indigo-600/90 text-white text-[9px] font-bold text-center py-0.5">Ảnh bìa</span>' : ''}
-                    <button type="button" onclick="removeMediaDraft(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-                </div>`).join('') + (mediaDraft.length ? `<div class="col-span-4 text-[11px] text-slate-500">${mediaDraft.length} ảnh/video trong khoảnh khắc này</div>` : '');
+                    ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-indigo-600/90 text-white text-[10px] font-bold text-center py-0.5">Ảnh bìa</span>' : ''}
+                    <button type="button" onclick="removeMediaDraft(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 text-white text-[11px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                </div>`).join('') + (mediaDraft.length ? `<div class="col-span-4 text-[12px] text-slate-500">${mediaDraft.length} ảnh/video trong khoảnh khắc này</div>` : '');
         }
         function setMediaCover(i) { mediaDraft.unshift(mediaDraft.splice(i, 1)[0]); renderMediaDraft(); }
         function removeMediaDraft(i) { mediaDraft.splice(i, 1); renderMediaDraft(); }
@@ -2832,19 +2841,19 @@ function guiNhacLich() {
             const border = overdue ? 'border-rose-200 bg-rose-50/40' : today ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white';
             return `
                 <div class="flex items-start gap-3 p-3 rounded-2xl border ${border}">
-                    <button onclick="togglePlanDone('${s.id}', ${p.id})" title="${p.done ? 'Bỏ đánh dấu xong' : 'Đánh dấu xong'}" class="mt-0.5 w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${p.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-emerald-400'}"><i class="fa-solid fa-check text-[11px]"></i></button>
+                    <button onclick="togglePlanDone('${s.id}', ${p.id})" title="${p.done ? 'Bỏ đánh dấu xong' : 'Đánh dấu xong'}" class="mt-0.5 w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${p.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-emerald-400'}"><i class="fa-solid fa-check text-[12px]"></i></button>
                     <div class="min-w-0 flex-1 cursor-pointer" onclick="openPlanModal(${p.id}, '${s.id}')">
                         <div class="font-extrabold text-sm text-slate-800 leading-snug ${p.done ? 'line-through text-slate-400' : ''}">${esc(p.title)}</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <div class="text-[12px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span><i class="fa-regular fa-clock mr-1"></i>${esc(formatDateVN(p.date))} · ${esc(p.time || '')}</span>
                             ${showKid ? `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full ${kidAccent(i).dot}"></span>${esc(shortName(s.name))}</span>` : ''}
                             <span class="px-2 py-0.5 rounded-full font-bold ${type.pill}"><i class="fa-solid ${type.icon} mr-1"></i>${type.label}</span>
                             <span title="Nhắc trước"><i class="fa-solid fa-bell mr-1"></i>${remindLabel(p.remind)}</span>
                         </div>
-                        ${p.note ? `<div class="text-[11px] text-slate-500 mt-1 line-clamp-2">${esc(p.note)}</div>` : ''}
+                        ${p.note ? `<div class="text-[12px] text-slate-500 mt-1 line-clamp-2">${esc(p.note)}</div>` : ''}
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span class="text-[10px] font-extrabold px-2 py-1 rounded-full whitespace-nowrap ${relCls}">${p.done ? 'Đã xong' : relTime(t)}</span>
+                        <span class="text-[11px] font-extrabold px-2 py-1 rounded-full whitespace-nowrap ${relCls}">${p.done ? 'Đã xong' : relTime(t)}</span>
                     </div>
                 </div>`;
         }
@@ -2870,7 +2879,7 @@ function guiNhacLich() {
             if (!el) return;
             const list = allPlans().filter(e => !e.p.done).sort((a, b) => planDate(a.p) - planDate(b.p));
             el.innerHTML = list.length
-                ? `<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">${list.slice(0, 6).map(e => planCardHtml(e, true)).join('')}</div>` + (list.length > 6 ? `<div class="text-[11px] text-slate-400 mt-2 text-center">và ${list.length - 6} lịch khác — chọn từng bé để xem đủ</div>` : '')
+                ? `<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">${list.slice(0, 6).map(e => planCardHtml(e, true)).join('')}</div>` + (list.length > 6 ? `<div class="text-[12px] text-slate-400 mt-2 text-center">và ${list.length - 6} lịch khác — chọn từng bé để xem đủ</div>` : '')
                 : `<div class="text-xs text-slate-400 py-2">Chưa có lịch hẹn nào sắp tới. Bấm "Thêm lịch hẹn" để đặt lịch cho từng bé.</div>`;
             updateNotifBar();
         }
@@ -3003,13 +3012,13 @@ function guiNhacLich() {
         function updateNotifBar() {
             let html;
             if (!('Notification' in window)) {
-                html = `<div class="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i>Trình duyệt này không hỗ trợ thông báo hệ thống — nhắc hẹn vẫn hiện ngay trên trang khi đang mở. Muốn nhắc cả khi đóng trang: bật email nhắc lịch trong Google Sheet.</div>`;
+                html = `<div class="text-[12px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i>Trình duyệt này không hỗ trợ thông báo hệ thống — nhắc hẹn vẫn hiện ngay trên trang khi đang mở. Muốn nhắc cả khi đóng trang: bật email nhắc lịch trong Google Sheet.</div>`;
             } else if (Notification.permission === 'granted') {
-                html = `<div class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell mr-1"></i>Đã bật thông báo. Nhắc hẹn hoạt động khi trang đang mở; muốn nhắc cả khi đóng trang hãy bật email nhắc lịch trong Google Sheet.</div>`;
+                html = `<div class="text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell mr-1"></i>Đã bật thông báo. Nhắc hẹn hoạt động khi trang đang mở; muốn nhắc cả khi đóng trang hãy bật email nhắc lịch trong Google Sheet.</div>`;
             } else if (Notification.permission === 'denied') {
-                html = `<div class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell-slash mr-1"></i>Thông báo đang bị chặn trong trình duyệt. Nhắc hẹn vẫn hiện trên trang; để nhận thông báo hệ thống hãy cho phép trong cài đặt trang web, hoặc bật email nhắc lịch trong Google Sheet.</div>`;
+                html = `<div class="text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell-slash mr-1"></i>Thông báo đang bị chặn trong trình duyệt. Nhắc hẹn vẫn hiện trên trang; để nhận thông báo hệ thống hãy cho phép trong cài đặt trang web, hoặc bật email nhắc lịch trong Google Sheet.</div>`;
             } else {
-                html = `<div class="flex items-center justify-between gap-3 text-[11px] text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2"><span><i class="fa-solid fa-bell mr-1"></i>Bật thông báo để được nhắc khi sắp tới giờ hẹn.</span><button onclick="requestNotify()" class="flex-shrink-0 bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-indigo-700">Bật thông báo</button></div>`;
+                html = `<div class="flex items-center justify-between gap-3 text-[12px] text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2"><span><i class="fa-solid fa-bell mr-1"></i>Bật thông báo để được nhắc khi sắp tới giờ hẹn.</span><button onclick="requestNotify()" class="flex-shrink-0 bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-indigo-700">Bật thông báo</button></div>`;
             }
             document.querySelectorAll('.notif-bar').forEach(el => el.innerHTML = html);
         }
@@ -3404,14 +3413,14 @@ function guiNhacLich() {
                             <div>
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="text-base font-black text-slate-800">${esc(y)}</span>
-                                    ${isCur ? '<span class="text-[10px] font-extrabold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Năm hiện tại</span>' : ''}
-                                    ${isSel && !isCur ? '<span class="text-[10px] font-extrabold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Đang xem</span>' : ''}
+                                    ${isCur ? '<span class="text-[11px] font-extrabold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Năm hiện tại</span>' : ''}
+                                    ${isSel && !isCur ? '<span class="text-[11px] font-extrabold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Đang xem</span>' : ''}
                                 </div>
                                 <div class="text-xs font-bold text-slate-500 mt-1">${esc(yd.grade || 'Chưa có lớp')} · ${esc(yd.school || 'Chưa có trường')}</div>
                             </div>
                             <div class="text-right flex-shrink-0">
                                 <div class="text-lg font-black px-3 py-1 rounded-xl ${scoreClass(stt.avg)}">${stt.avg !== null ? stt.avg.toFixed(2) : '--'}</div>
-                                <div class="text-[10px] font-bold text-slate-400 mt-0.5">ĐTB cả năm</div>
+                                <div class="text-[11px] font-bold text-slate-400 mt-0.5">ĐTB cả năm</div>
                             </div>
                         </div>
                         ${stt.avg !== null ? `<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-indigo-500 to-pink-500" style="width:${pct}%"></div></div>` : ''}
