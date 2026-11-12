@@ -2995,12 +2995,21 @@ function guiNhacLich() {
         // ĐỒNG BỘ GOOGLE SHEET (qua Google Apps Script web app)
         // =====================================================
         const SYNC_CFG_KEY = 'family_sync_cfg_v1', SYNC_META_KEY = 'family_sync_meta_v1';
+        // Kết nối Google Sheet ghi sẵn trong file (máy nào mở file cũng tự kết nối, không cần nhập lại)
+        const BUILTIN_SYNC = {
+            url: 'https://script.google.com/macros/s/AKfycbxEzzXA5QUm53NQ3Qh_hUaQqNAFC4BMYNc4ij3cz8MGXkzZT_V2Xn6rT57rGCibJv6r/exec',
+            token: 'vinh123'
+        };
         let syncCfg = { url: '', token: '', auto: true };
         let syncMeta = { localTs: 0, syncedLocalTs: 0, remoteTs: 0 };
         let syncReady = false, syncBusy = false, syncTimer = null, syncState = 'off';
 
         function loadSyncCfg() {
             try { Object.assign(syncCfg, JSON.parse(localStorage.getItem(SYNC_CFG_KEY) || '{}')); } catch (e) {}
+            if (!syncCfg.disabled) {
+                if (!syncCfg.url) syncCfg.url = BUILTIN_SYNC.url;
+                if (!syncCfg.token) syncCfg.token = BUILTIN_SYNC.token;
+            }
             try { Object.assign(syncMeta, JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{}')); } catch (e) {}
         }
         function saveSyncCfg() { try { localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg)); } catch (e) {} }
@@ -3159,6 +3168,7 @@ function guiNhacLich() {
             syncCfg.url = document.getElementById('syncUrl').value.trim();
             syncCfg.token = document.getElementById('syncToken').value;
             syncCfg.auto = document.getElementById('syncAuto').checked;
+            syncCfg.disabled = false;
             saveSyncCfg();
         }
         async function saveSyncSettings() {
@@ -3219,7 +3229,7 @@ function guiNhacLich() {
 
         function syncDisconnect() {
             if (!confirm('Ngắt kết nối Google Sheet? Dữ liệu trên máy và trên Sheet vẫn được giữ nguyên.')) return;
-            syncCfg = { url: '', token: '', auto: true };
+            syncCfg = { url: '', token: '', auto: true, disabled: true };   // không tự dùng lại kết nối ghi sẵn
             syncMeta.remoteTs = 0; syncMeta.syncedLocalTs = 0;
             saveSyncCfg(); saveSyncMeta();
             document.getElementById('syncUrl').value = ''; document.getElementById('syncToken').value = '';
