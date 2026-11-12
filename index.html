@@ -1029,7 +1029,7 @@ const HEAD = {
 // ======================= WEB APP =======================
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() { return out_({ ok: true, ping: true, version: 4, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+function doGet() { return out_({ ok: true, ping: true, version: 5, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -1037,7 +1037,7 @@ function doPost(e) {
     lock.waitLock(25000);
     const body = JSON.parse(e.postData.contents);
     if (body.token !== SECRET) return out_({ ok: false, error: 'Sai mật khẩu (token)' });
-    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 4 });
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 5 });
     if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
     if (body.action === 'load') {
       if (!hasData_()) return out_({ ok: true, empty: true });
@@ -1050,7 +1050,11 @@ function doPost(e) {
       if (!body.force && cur > (Number(body.baseTs) || 0)) {
         return out_({ ok: false, conflict: true, savedAt: cur, error: 'Google Sheet có chỉnh sửa mới hơn bản trên máy' });
       }
-      saveAll_(body.data, body.savedAt);
+      // ảnh app tham chiếu mà Sheet chưa có -> báo app gửi kèm
+      const have = imgKeys_(SpreadsheetApp.getActive()), imgs = body.imgs || {};
+      const need = refsInData_(body.data).filter(function (k) { return !have[k] && !imgs[k]; });
+      if (need.length) return out_({ ok: false, needImgs: need, error: 'Thiếu ' + need.length + ' ảnh' });
+      saveAll_(body.data, body.savedAt, imgs);
       return out_({ ok: true, savedAt: body.savedAt });
     }
     return out_({ ok: false, error: 'Hành động không hợp lệ' });
@@ -1227,24 +1231,55 @@ function loadImgs_(ss) {
 }
 
 // ======================= GHI: dữ liệu app -> Sheet =======================
-function put_(ss, name, head, rows, textCols, extraRows) {
-  const sh = ss.getSheetByName(name) || ss.insertSheet(name);
-  sh.clear();
-  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
-  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#E0E7FF');
-  const span = rows.length + (extraRows || 300);
-  if (sh.getMaxRows() < span + 1) sh.insertRowsAfter(sh.getMaxRows(), span + 1 - sh.getMaxRows());   // đủ dòng cho dữ liệu lớn
-  (textCols || []).forEach(function (c) { sh.getRange(2, c, span, 1).setNumberFormat('@'); });   // giữ nguyên số 0 đầu, ngày giờ dạng chữ
-  if (rows.length) sh.getRange(2, 1, rows.length, head.length).setValues(rows);
-  sh.setFrozenRows(1);
+// Ghi nhanh: lần đầu (hoặc khi đổi cấu trúc / vượt sức chứa) mới định dạng, tạo danh sách chọn, công thức.
+// Các lần sau chỉ xóa nội dung cũ và ghi giá trị mới -> nhanh hơn nhiều.
+const LAYOUT_V = '5';
+function blocks_(n, skip) {   // các dải cột liên tiếp không nằm trong skip (đánh số từ 1)
+  const out = []; var st = null;
+  for (var c = 1; c <= n + 1; c++) {
+    const ok = c <= n && skip.indexOf(c) === -1;
+    if (ok && st === null) st = c;
+    if (!ok && st !== null) { out.push([st, c - 1]); st = null; }
+  }
+  return out;
+}
+function put_(ss, name, head, rows, textCols, skipCols, setupFn) {
+  const props = PropertiesService.getScriptProperties();
+  skipCols = skipCols || [];
+  var sh = ss.getSheetByName(name);
+  const cap = Number(props.getProperty('cap:' + name) || 0);
+  const headOk = sh && sh.getLastColumn() >= head.length && sh.getRange(1, 1, 1, head.length).getValues()[0].join('|') === head.join('|');
+  const setup = !sh || !headOk || props.getProperty('layout:' + name) !== LAYOUT_V || rows.length + 20 > cap;
+  const bl = blocks_(head.length, skipCols);
+  if (setup) {
+    sh = sh || ss.insertSheet(name);
+    sh.clear();
+    sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
+    sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#E0E7FF');
+    const span = rows.length + 300;
+    if (sh.getMaxRows() < span + 1) sh.insertRowsAfter(sh.getMaxRows(), span + 1 - sh.getMaxRows());
+    (textCols || []).forEach(function (c) { sh.getRange(2, c, span, 1).setNumberFormat('@'); });
+    sh.setFrozenRows(1);
+    if (setupFn) setupFn(sh, span);
+    props.setProperty('cap:' + name, String(span));
+    props.setProperty('layout:' + name, LAYOUT_V);
+  } else {
+    const last = sh.getLastRow();
+    if (last >= 2) bl.forEach(function (b) { sh.getRange(2, b[0], last - 1, b[1] - b[0] + 1).clearContent(); });
+  }
+  if (rows.length) bl.forEach(function (b) {
+    sh.getRange(2, b[0], rows.length, b[1] - b[0] + 1).setValues(rows.map(function (r) { return r.slice(b[0] - 1, b[1]); }));
+  });
   return sh;
 }
 function dvList_(sh, col, list, n) { sh.getRange(2, col, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(true).build()); }
 function dvKid_(ss, sh, n) { sh.getRange(2, 1, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(ss.getSheetByName(SH.HS).getRange('B2:B100'), true).setAllowInvalid(true).build()); }
 
-function writeTabs_(ss, data, imgs) {
+function writeTabs_(ss, data, legacyImgs, refs) {
+  // ảnh: '@img:<mã>' (app mới gửi riêng) hoặc 'data:...' (app cũ) -> ô ghi '@anh:<mã>'
   const stash = function (key, val) {
-    if (typeof val === 'string' && val.indexOf('data:') === 0) { imgs.push([key, val]); return '@anh:' + key; }
+    if (typeof val === 'string' && val.indexOf('@img:') === 0) { refs[val.substring(5)] = true; return '@anh:' + val.substring(5); }
+    if (typeof val === 'string' && val.indexOf('data:') === 0) { legacyImgs.push([key, val]); refs[key] = true; return '@anh:' + key; }
     return val || '';
   };
   const hs = [], tk = [], tkb = [], diem = [], tt = [], kh = [], kn = [];
@@ -1267,60 +1302,88 @@ function writeTabs_(ss, data, imgs) {
   });
 
   const all = function (n) { return Array.apply(null, Array(n)).map(function (_, i) { return i + 1; }); };
+  const kidDv = function (sh, n) { dvKid_(ss, sh, n); };
   put_(ss, SH.HS, HEAD.HocSinh, hs, all(10));
-  const kidCols = function (head, textCols, rows) { return rows; };
-  var sh;
-  sh = put_(ss, SH.TK, HEAD.TongKetNam, tk, all(9)); dvKid_(ss, sh, tk.length + 300);
-  sh = put_(ss, SH.TKB, HEAD.ThoiKhoaBieu, tkb, all(10)); dvKid_(ss, sh, tkb.length + 300);
-  dvList_(sh, 3, DAYS.map(function (d) { return d[1]; }), tkb.length + 300); dvList_(sh, 4, SESS.map(function (d) { return d[1]; }), tkb.length + 300);
-  sh = put_(ss, SH.DIEM, HEAD.BangDiem, diem, [1, 2, 3, 4, 5, 6, 7, 11]); dvKid_(ss, sh, diem.length + 300);
-  const nF = diem.length + 300, f = [];
-  const sep = /^(vi|de|fr|es|it|pt|ru|id|nl|tr|pl|cs|sk|sv|da|nb|no|fi|uk|ro|hu|el|bg|hr|sl|sr|lt|lv|et|az|kk|be)/i.test(String(ss.getSpreadsheetLocale ? ss.getSpreadsheetLocale() : '')) ? ',' : '.';
-  const V = function (c) { return 'IF(ISNUMBER(' + c + '),' + c + ',VALUE(SUBSTITUTE(SUBSTITUTE(' + c + ',",","' + sep + '"),".","' + sep + '")))'; };
-  for (var i = 0; i < nF; i++) {
-    const r = i + 2, D = 'D' + r, E = 'E' + r, F = 'F' + r, G = 'G' + r, H = 'H' + r, I = 'I' + r;
-    f.push(['=IF(OR($C' + r + '="",' + D + '="",' + E + '=""),"",IFERROR(ROUND((' + V(D) + '+' + V(E) + '*2)/3,2),"Sai số"))',
-            '=IF(OR($C' + r + '="",' + F + '="",' + G + '=""),"",IFERROR(ROUND((' + V(F) + '+' + V(G) + '*2)/3,2),"Sai số"))',
-            '=IF($C' + r + '="","",IFERROR(IF(AND(ISNUMBER(' + H + '),ISNUMBER(' + I + ')),ROUND((' + H + '+' + I + '*2)/3,2),IF(ISNUMBER(' + H + '),' + H + ',IF(ISNUMBER(' + I + '),' + I + ',""))),""))']);
-  }
-  sh.getRange(2, 8, nF, 3).setFormulas(f);
-  sh = put_(ss, SH.TT, HEAD.ThanhTich, tt, all(5)); dvKid_(ss, sh, tt.length + 300);
-  sh = put_(ss, SH.KH, HEAD.KeHoach, kh, all(8)); dvKid_(ss, sh, kh.length + 300);
-  dvList_(sh, 3, TYPES.map(function (d) { return d[1]; }), kh.length + 300); dvList_(sh, 7, DONE_T, kh.length + 300);
-  sh = put_(ss, SH.KN, HEAD.KyNiem, kn, all(5)); dvKid_(ss, sh, kn.length + 300);
-  dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), kn.length + 300);
+  put_(ss, SH.TK, HEAD.TongKetNam, tk, all(9), [], kidDv);
+  put_(ss, SH.TKB, HEAD.ThoiKhoaBieu, tkb, all(10), [], function (sh, n) {
+    dvKid_(ss, sh, n); dvList_(sh, 3, DAYS.map(function (d) { return d[1]; }), n); dvList_(sh, 4, SESS.map(function (d) { return d[1]; }), n);
+  });
+  put_(ss, SH.DIEM, HEAD.BangDiem, diem, [1, 2, 3, 4, 5, 6, 7, 11], [8, 9, 10], function (sh, n) {   // cột ĐTB (8-10) là công thức, không ghi đè
+    dvKid_(ss, sh, n);
+    const f = [];
+    const sep = /^(vi|de|fr|es|it|pt|ru|id|nl|tr|pl|cs|sk|sv|da|nb|no|fi|uk|ro|hu|el|bg|hr|sl|sr|lt|lv|et|az|kk|be)/i.test(String(ss.getSpreadsheetLocale ? ss.getSpreadsheetLocale() : '')) ? ',' : '.';
+    const V = function (c) { return 'IF(ISNUMBER(' + c + '),' + c + ',VALUE(SUBSTITUTE(SUBSTITUTE(' + c + ',",","' + sep + '"),".","' + sep + '")))'; };
+    for (var i = 0; i < n; i++) {
+      const r = i + 2, D = 'D' + r, E = 'E' + r, F = 'F' + r, G = 'G' + r, H = 'H' + r, I = 'I' + r;
+      f.push(['=IF(OR($C' + r + '="",' + D + '="",' + E + '=""),"",IFERROR(ROUND((' + V(D) + '+' + V(E) + '*2)/3,2),"Sai số"))',
+              '=IF(OR($C' + r + '="",' + F + '="",' + G + '=""),"",IFERROR(ROUND((' + V(F) + '+' + V(G) + '*2)/3,2),"Sai số"))',
+              '=IF($C' + r + '="","",IFERROR(IF(AND(ISNUMBER(' + H + '),ISNUMBER(' + I + ')),ROUND((' + H + '+' + I + '*2)/3,2),IF(ISNUMBER(' + H + '),' + H + ',IF(ISNUMBER(' + I + '),' + I + ',""))),""))']);
+    }
+    sh.getRange(2, 8, n, 3).setFormulas(f);
+  });
+  put_(ss, SH.TT, HEAD.ThanhTich, tt, all(5), [], kidDv);
+  put_(ss, SH.KH, HEAD.KeHoach, kh, all(8), [], function (sh, n) {
+    dvKid_(ss, sh, n); dvList_(sh, 3, TYPES.map(function (d) { return d[1]; }), n); dvList_(sh, 7, DONE_T, n);
+  });
+  put_(ss, SH.KN, HEAD.KyNiem, kn, all(5), [], function (sh, n) { dvKid_(ss, sh, n); dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), n); });
 }
 
-function saveAll_(data, savedAt) {
+// các mã ảnh đang có trong sheet _Anh
+function imgKeys_(ss) {
+  const sh = ss.getSheetByName(SH.IMG), o = {};
+  if (sh && sh.getLastRow() >= 1) sh.getRange(1, 1, sh.getLastRow(), 1).getValues().forEach(function (r) { if (r[0]) o[r[0]] = true; });
+  return o;
+}
+function refsInData_(data) {   // các mã '@img:...' mà app gửi lên
+  const o = {};
+  JSON.stringify(data, function (k, v) { if (typeof v === 'string' && v.indexOf('@img:') === 0) o[v.substring(5)] = true; return v; });
+  return Object.keys(o);
+}
+
+function saveAll_(data, savedAt, newImgs) {
   if (!Array.isArray(data) || !data.length) throw new Error('Dữ liệu gửi lên không hợp lệ');
   const ss = SpreadsheetApp.getActive();
+  const meta = metaSheet_();
+  newImgs = newImgs || {};
 
-  // bản sao lưu thô (đã bỏ ảnh tải lên cho nhẹ), giữ 2 thế hệ
-  const slim = JSON.stringify(data, function (k, v) { return (typeof v === 'string' && v.indexOf('data:') === 0) ? '(ảnh tải lên)' : v; });
+  // bản sao lưu thô (không kèm ảnh); bản "trước" chỉ xoay vòng tối đa 10 phút/lần để luôn giữ 1 bản cũ hơn
+  const slim = JSON.stringify(data, function (k, v) { return (typeof v === 'string' && (v.indexOf('data:') === 0 || v.indexOf('@img:') === 0)) ? '(ảnh)' : v; });
   const raw = ss.getSheetByName(SH.RAW) || ss.insertSheet(SH.RAW);
-  if (raw.getLastRow() >= 1) {
+  const lastRot = Number(meta.getRange(1, 4).getValue()) || 0;
+  if (raw.getLastRow() >= 1 && Date.now() - lastRot > 10 * 60000) {
     const pv = ss.getSheetByName(SH.RAWP) || ss.insertSheet(SH.RAWP);
     const old = raw.getRange(1, 1, raw.getLastRow(), 1).getValues();
     pv.clear(); pv.getRange(1, 1, old.length, 1).setValues(old);
+    meta.getRange(1, 4).setValue(Date.now());
   }
   raw.clear();
   const rows = [[savedAt]];
   for (var i = 0; i < slim.length; i += CHUNK) rows.push(['c' + slim.substring(i, i + CHUNK)]);
   raw.getRange(1, 1, rows.length, 1).setValues(rows);
 
-  // các bảng dữ liệu + ảnh tải lên
-  const imgs = [];
-  writeTabs_(ss, data, imgs);
-  const im = ss.getSheetByName(SH.IMG) || ss.insertSheet(SH.IMG);
-  im.clear();
-  const ir = [];
-  imgs.forEach(function (it) { for (var j = 0, k = 0; j < it[1].length; j += CHUNK, k++) ir.push([it[0], k, 'c' + it[1].substring(j, j + CHUNK)]); });
-  if (ir.length) im.getRange(1, 1, ir.length, 3).setValues(ir);
+  // các bảng dữ liệu
+  const legacy = [], refs = {};
+  writeTabs_(ss, data, legacy, refs);
 
-  metaSheet_().getRange(1, 1, 1, 2).setValues([[savedAt, fingerprint_()]]);
-  [SH.META, SH.IMG, SH.RAW, SH.RAWP].forEach(function (n) { const s = ss.getSheetByName(n); if (s) { try { s.hideSheet(); } catch (e) {} } });
+  // ảnh: chỉ ghi lại sheet _Anh khi có ảnh mới hoặc có ảnh không còn dùng
+  const have = imgKeys_(ss);
+  const newKeys = Object.keys(newImgs).filter(function (k) { return refs[k]; });
+  const unused = Object.keys(have).filter(function (k) { return !refs[k]; });
+  if (newKeys.length || legacy.length || unused.length) {
+    const im = ss.getSheetByName(SH.IMG) || ss.insertSheet(SH.IMG);
+    const keep = im.getLastRow() >= 1 ? im.getRange(1, 1, im.getLastRow(), 3).getValues().filter(function (r) { return r[0] && refs[r[0]] && !newImgs[r[0]]; }) : [];
+    const add = [];
+    newKeys.map(function (k) { return [k, newImgs[k]]; }).concat(legacy).forEach(function (it) {
+      for (var j = 0, n = 0; j < it[1].length; j += CHUNK, n++) add.push([it[0], n, 'c' + it[1].substring(j, j + CHUNK)]);
+    });
+    const all = keep.concat(add);
+    im.clear();
+    if (all.length) im.getRange(1, 1, all.length, 3).setValues(all);
+  }
+
+  meta.getRange(1, 1, 1, 2).setValues([[savedAt, fingerprint_()]]);
+  [SH.META, SH.IMG, SH.RAW, SH.RAWP].forEach(function (n) { const s = ss.getSheetByName(n); if (s && !s.isSheetHidden()) { try { s.hideSheet(); } catch (e) {} } });
 }
-
 
 // ======================= EMAIL NHẮC LỊCH =======================
 function onOpen() {
@@ -1420,6 +1483,9 @@ function guiNhacLich() {
   Object.keys(all).forEach(function (k) { if (k.indexOf('sent:') === 0 && now - Number(all[k]) > 60 * 86400000) props.deleteProperty(k); });
 }
 </script>
+
+    <!-- NHÃN TRẠNG THÁI ĐỒNG BỘ -->
+    <div id="syncPill" class="hidden" onclick="openSyncModal()"></div>
 
     <!-- TOAST NHẮC LỊCH -->
     <div id="toastBox" class="fixed top-3 inset-x-3 sm:left-auto sm:right-4 sm:w-96 z-[60] space-y-2 pointer-events-none"></div>
@@ -3094,8 +3160,9 @@ function guiNhacLich() {
             oldUrls: ['https://script.google.com/macros/s/AKfycbxEzzXA5QUm53NQ3Qh_hUaQqNAFC4BMYNc4ij3cz8MGXkzZT_V2Xn6rT57rGCibJv6r/exec']   // URL cũ: trình duyệt nào còn lưu sẽ tự chuyển sang URL mới
         };
         let syncCfg = { url: '', token: '', auto: true };
-        let syncMeta = { localTs: 0, syncedLocalTs: 0, remoteTs: 0 };
-        let syncReady = false, syncBusy = false, syncTimer = null, syncState = 'off';
+        let syncMeta = { localTs: 0, syncedLocalTs: 0, remoteTs: 0, knownImgs: [] };
+        let syncReady = false, syncBusy = false, syncTimer = null, syncState = 'off', syncServerVersion = 0;
+        const SYNC_DELAY = 1500;   // ms chờ gom các thay đổi liên tiếp rồi mới gửi
 
         function loadSyncCfg() {
             try { Object.assign(syncCfg, JSON.parse(localStorage.getItem(SYNC_CFG_KEY) || '{}')); } catch (e) {}
@@ -3104,7 +3171,7 @@ function guiNhacLich() {
                     syncCfg.url = BUILTIN_SYNC.url;
                     syncCfg.token = BUILTIN_SYNC.token;
                     try { localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg)); } catch (e) {}
-                    try { const mt = JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{}'); mt.remoteTs = 0; mt.syncedLocalTs = 0; localStorage.setItem(SYNC_META_KEY, JSON.stringify(mt)); } catch (e) {}
+                    try { const mt = JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{}'); mt.remoteTs = 0; mt.syncedLocalTs = 0; mt.knownImgs = []; localStorage.setItem(SYNC_META_KEY, JSON.stringify(mt)); } catch (e) {}
                 }
                 if (!syncCfg.url) syncCfg.url = BUILTIN_SYNC.url;
                 if (!syncCfg.token) syncCfg.token = BUILTIN_SYNC.token;
@@ -3123,7 +3190,9 @@ function guiNhacLich() {
             err:   { dot: 'bg-rose-500',                icon: 'fa-triangle-exclamation', box: 'bg-rose-50 border-rose-200 text-rose-700' }
         };
         function setSyncState(st, msg) {
+            const prev = syncState;
             syncState = st;
+            if (st !== prev || st !== 'ok') setTimeout(updateSyncPill, 0);
             const c = SYNC_STYLE[st] || SYNC_STYLE.off;
             const dot = document.getElementById('syncDot'), icon = document.getElementById('syncIcon'), box = document.getElementById('syncStatus');
             if (dot) dot.className = `absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${c.dot}`;
@@ -3136,9 +3205,9 @@ function guiNhacLich() {
             syncMeta.localTs = Date.now();
             saveSyncMeta();
             if (syncReady && syncConfigured() && syncCfg.auto) {
-                setSyncState('dirty', 'Có thay đổi, sẽ tự lưu lên Google Sheet sau vài giây...');
+                setSyncState('dirty', 'Có thay đổi, đang chuẩn bị lưu lên Google Sheet...');
                 clearTimeout(syncTimer);
-                syncTimer = setTimeout(() => syncPush(), 4000);
+                syncTimer = setTimeout(() => syncPush(), SYNC_DELAY);
             }
         }
 
@@ -3146,14 +3215,14 @@ function guiNhacLich() {
             const ctl = new AbortController();
             const to = setTimeout(() => ctl.abort(), 60000);
             try {
-                const res = await fetch(syncCfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), signal: ctl.signal });
+                const res = await fetch(syncCfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: typeof payload === 'string' ? payload : JSON.stringify(payload), signal: ctl.signal });
                 const txt = await res.text();
                 let j;
                 try { j = JSON.parse(txt); } catch (e) {
                     const snip = txt.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
                     throw new Error('Google trả về trang web thay vì dữ liệu (' + (snip || 'rỗng') + '). Thường do: chưa triển khai phiên bản mới, quyền truy cập chưa là "Bất kỳ ai", hoặc mã Apps Script bị lỗi/trùng khi dán.');
                 }
-                if (!j.ok) { const er = new Error(j.error || 'Lỗi không rõ'); er.conflict = !!j.conflict; throw er; }
+                if (!j.ok) { const er = new Error(j.error || 'Lỗi không rõ'); er.conflict = !!j.conflict; er.needImgs = j.needImgs; throw er; }
                 return j;
             } catch (e) {
                 if (e.name === 'AbortError') throw new Error('Quá thời gian chờ');
@@ -3162,15 +3231,52 @@ function guiNhacLich() {
             } finally { clearTimeout(to); }
         }
 
+        // Mã nhận diện ảnh theo nội dung (ảnh nào Sheet đã có thì không gửi lại -> lưu nhanh hơn nhiều)
+        const imgHashCache = new Map();
+        function strHash(str) {
+            let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+            for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+        }
+        function imgHash(v) { let h = imgHashCache.get(v); if (!h) { h = 'i' + strHash(v) + v.length.toString(36); imgHashCache.set(v, h); } return h; }
+        function allImgHashes(data) { const o = new Set(); JSON.stringify(data, (k, v) => { if (typeof v === 'string' && v.startsWith('data:')) o.add(imgHash(v)); return v; }); return o; }
+        function buildSavePayload(ts, force, sendAll) {
+            const known = new Set(sendAll ? [] : (syncMeta.knownImgs || []));
+            const imgs = {}, refs = [];
+            const legacy = syncServerVersion < 5;   // Apps Script cũ: gửi ảnh nguyên như trước
+            const json = JSON.stringify(studentsData, (k, v) => {
+                if (!legacy && typeof v === 'string' && v.startsWith('data:')) {
+                    const h = imgHash(v); refs.push(h);
+                    if (!known.has(h)) imgs[h] = v;
+                    return '@img:' + h;
+                }
+                return v;
+            });
+            const body = `{"action":"save","token":${JSON.stringify(syncCfg.token)},"savedAt":${ts},"baseTs":${Number(syncMeta.remoteTs) || 0},"force":${force === true},"imgs":${JSON.stringify(imgs)},"data":${json}}`;
+            return { body, refs };
+        }
+
         async function syncPush(force) {
             if (!syncConfigured() || syncBusy) return false;
+            clearTimeout(syncTimer);
             syncBusy = true;
             setSyncState('busy', 'Đang lưu lên Google Sheet...');
             const pushedLocal = syncMeta.localTs;
             try {
+                if (!syncServerVersion) { try { syncServerVersion = (await syncRequest({ action: 'ping', token: syncCfg.token })).version || 1; } catch (e) {} }
                 const ts = Date.now();
-                await syncRequest({ action: 'save', token: syncCfg.token, savedAt: ts, baseTs: syncMeta.remoteTs, force: force === true, data: studentsData });
-                syncMeta.remoteTs = ts; syncMeta.syncedLocalTs = pushedLocal; saveSyncMeta();
+                let pl = buildSavePayload(ts, force, false);
+                try { await syncRequest(pl.body); }
+                catch (e) {
+                    if (!e.needImgs) throw e;
+                    pl = buildSavePayload(ts, force, true);     // Sheet thiếu ảnh -> gửi kèm toàn bộ ảnh 1 lần
+                    await syncRequest(pl.body);
+                }
+                syncMeta.remoteTs = ts; syncMeta.syncedLocalTs = pushedLocal;
+                syncMeta.knownImgs = [...new Set(pl.refs)];
+                saveSyncMeta();
                 setSyncState('ok', 'Đã lưu lên Google Sheet lúc ' + new Date(ts).toLocaleTimeString('vi-VN'));
                 return true;
             } catch (e) {
@@ -3182,7 +3288,7 @@ function guiNhacLich() {
                 return false;
             } finally {
                 syncBusy = false;
-                if (syncMeta.localTs > pushedLocal && syncCfg.auto && syncState === 'ok') { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncPush(), 4000); }
+                if (syncMeta.localTs > pushedLocal && syncCfg.auto && syncState === 'ok') { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncPush(), 300); }
             }
         }
 
@@ -3211,6 +3317,7 @@ function guiNhacLich() {
             }));
             studentsData = data;
             migrateData();
+            syncMeta.knownImgs = [...allImgHashes(data)];
             if (warnings && warnings.length) showToast('Một số dòng trong Google Sheet bị bỏ qua', warnings.slice(0, 3).join(' · ') + (warnings.length > 3 ? ` (+${warnings.length - 3})` : ''));
             try { localStorage.setItem('family_students_data_v2', JSON.stringify(studentsData)); } catch (e) {}
             syncMeta.remoteTs = ts; syncMeta.localTs = Date.now(); syncMeta.syncedLocalTs = syncMeta.localTs; saveSyncMeta();
@@ -3253,6 +3360,39 @@ function guiNhacLich() {
         }
         document.addEventListener('visibilitychange', () => { if (!document.hidden) syncCheckRemote(); });
         setInterval(syncCheckRemote, 120000);
+
+        function syncPending() { return syncConfigured() && (syncBusy || syncMeta.localTs > syncMeta.syncedLocalTs); }
+        window.addEventListener('beforeunload', e => {
+            if (!syncPending()) return;
+            if (!syncBusy) syncPush();          // còn thay đổi chưa gửi: gửi ngay
+            e.preventDefault();
+            e.returnValue = 'Dữ liệu đang được lưu lên Google Sheet. Đóng trang bây giờ có thể mất thay đổi vừa nhập.';
+            return e.returnValue;
+        });
+        // Điện thoại thường không hỏi khi đóng: chuyển app/khóa màn hình là gửi ngay phần còn chờ
+        document.addEventListener('visibilitychange', () => { if (document.hidden && syncPending() && !syncBusy) syncPush(); });
+        window.addEventListener('pagehide', () => { if (syncPending() && !syncBusy) syncPush(); });
+        window.addEventListener('online', () => { if (syncPending() && !syncBusy) syncPush(); });
+
+        // Nhãn nổi cho biết đang lưu / đã lưu / lỗi
+        let pillTimer = null;
+        function updateSyncPill() {
+            const el = document.getElementById('syncPill');
+            if (!el) return;
+            clearTimeout(pillTimer);
+            const st = syncState;
+            if (!syncConfigured() || st === 'off') { el.classList.add('hidden'); return; }
+            const map = {
+                busy:  ['bg-amber-500', '<i class="fa-solid fa-rotate fa-spin mr-1.5"></i>Đang lưu lên Google Sheet… đừng đóng trang'],
+                dirty: ['bg-amber-500', '<i class="fa-solid fa-clock mr-1.5"></i>Chờ lưu lên Google Sheet…'],
+                err:   ['bg-rose-600', '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Chưa lưu được lên Google Sheet · bấm để xem'],
+                ok:    ['bg-emerald-600', '<i class="fa-solid fa-check mr-1.5"></i>Đã lưu lên Google Sheet']
+            };
+            const [bg, html] = map[st] || map.ok;
+            el.className = `fixed left-1/2 -translate-x-1/2 bottom-[calc(76px+env(safe-area-inset-bottom))] md:bottom-5 z-[45] ${bg} text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg cursor-pointer whitespace-nowrap`;
+            el.innerHTML = html;
+            if (st === 'ok') pillTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+        }
 
         // ----- Hộp thoại -----
         function openSyncModal() {
@@ -3314,9 +3454,10 @@ function guiNhacLich() {
             let ping;
             try { ping = await syncRequest({ action: 'ping', token: syncCfg.token }); }
             catch (e) { out.push('✗ Gọi thử thất bại: ' + e.message); show(); return; }
+            syncServerVersion = ping.version || 1;
             out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
-            if ((ping.version || 0) < 4) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
-            else out.push('✓ Mã Apps Script là bản mới nhất (v4)');
+            if ((ping.version || 0) < 5) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v5)');
             show();
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -3329,7 +3470,7 @@ function guiNhacLich() {
         function syncDisconnect() {
             if (!confirm('Ngắt kết nối Google Sheet? Dữ liệu trên máy và trên Sheet vẫn được giữ nguyên.')) return;
             syncCfg = { url: '', token: '', auto: true, disabled: true };   // không tự dùng lại kết nối ghi sẵn
-            syncMeta.remoteTs = 0; syncMeta.syncedLocalTs = 0;
+            syncMeta.remoteTs = 0; syncMeta.syncedLocalTs = 0; syncMeta.knownImgs = [];
             saveSyncCfg(); saveSyncMeta();
             document.getElementById('syncUrl').value = ''; document.getElementById('syncToken').value = '';
             setSyncState('off');
