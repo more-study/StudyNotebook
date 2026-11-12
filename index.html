@@ -94,10 +94,6 @@
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
-                    <button onclick="resetDataToDefault()" title="Khôi phục dữ liệu mẫu" class="w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 hidden sm:flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200/70 transition">
-                        <i class="fa-solid fa-rotate-right"></i>
-                        <span class="hidden sm:inline">Dữ liệu mẫu</span>
-                    </button>
                     <button id="syncBtn" onclick="openSyncModal()" title="Đồng bộ Google Sheet" class="relative w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200/70 text-slate-500 transition">
                         <i id="syncIcon" class="fa-solid fa-cloud"></i>
                         <span id="syncLabel" class="hidden sm:inline">Google Sheet</span>
@@ -518,7 +514,6 @@
                     <p class="text-xs text-slate-500">Đặt lịch họp, thi, học thêm, sự kiện... kèm hẹn giờ nhắc</p>
                 </div>
                 <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <button onclick="downloadIcsAll()" class="flex-1 sm:flex-none bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2"><i class="fa-regular fa-calendar-plus text-indigo-600"></i> Xuất lịch (.ics)</button>
                     <button onclick="openPlanModal(null, currentStudentId)" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Thêm lịch hẹn</button>
                 </div>
             </div>
@@ -875,10 +870,11 @@
                     <input type="text" id="mediaTitle" placeholder="Lễ Khai Giảng, Thi Văn Nghệ..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Đường Dẫn URL (Link Ảnh/Video)</label>
-                    <input type="text" id="mediaUrl" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2">
-                    <p class="text-[11px] text-slate-400 mb-2">Hoặc tải lên ảnh trực tiếp từ thiết bị của bạn:</p>
-                    <input type="file" id="mediaFile" accept="image/*,video/*" onchange="handleMediaUpload(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold hover:file:bg-indigo-100">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Dán link ảnh / video (mỗi link 1 dòng)</label>
+                    <textarea id="mediaUrl" rows="2" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
+                    <p class="text-[11px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh</b> từ thiết bị (ảnh tự thu nhỏ cho nhẹ). Bấm vào ảnh để đặt làm ảnh bìa.</p>
+                    <input type="file" id="mediaFile" accept="image/*,video/*" multiple onchange="handleMediaUpload(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold hover:file:bg-indigo-100">
+                    <div id="mediaPreview" class="grid grid-cols-4 gap-2 mt-3"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Ngày Tháng</label>
@@ -965,7 +961,6 @@
             <p class="text-[11px] text-slate-400 leading-relaxed">Các bảng trong Sheet: HocSinh, TongKetNam, ThoiKhoaBieu, BangDiem, ThanhTich, KeHoach, KyNiem. Thêm dòng mới để thêm dữ liệu; cột "Bé" phải ghi đúng họ tên đã có ở HocSinh. Google Sheet là nơi lưu chính: bạn sửa trong app hay sửa thẳng trong Sheet đều được. Sửa trong Sheet xong, mở lại app (hoặc bấm "Tải về từ Sheet") để cập nhật. Địa chỉ URL + mật khẩu chỉ lưu trên trình duyệt này.</p>
             <div class="flex items-center justify-between pt-1 border-t">
                 <button onclick="syncDisconnect()" class="text-[11px] font-bold text-slate-400 hover:text-rose-600">Ngắt kết nối</button>
-                <button onclick="closeModal('syncModal'); resetDataToDefault()" class="text-[11px] font-bold text-slate-400 hover:text-rose-600">Khôi phục dữ liệu mẫu</button>
             </div>
         </div>
     </div>
@@ -982,7 +977,7 @@
  *   BangDiem      : điểm các môn (cột ĐTB tự tính bằng công thức, không cần nhập)
  *   ThanhTich     : bằng khen, giải thưởng
  *   KeHoach       : lịch hẹn, nhắc việc
- *   KyNiem        : ảnh / video kỷ niệm (dán link)
+ *   KyNiem        : ảnh / video kỷ niệm (dán link; 1 khoảnh khắc nhiều ảnh = mỗi link 1 dòng, Alt+Enter để xuống dòng)
  *
  * EMAIL NHẮC LỊCH: mở file Sheet > menu "📧 Nhắc lịch" > "Bật gửi email nhắc tự động" (cấp quyền 1 lần).
  *   Google sẽ tự kiểm tra bảng KeHoach mỗi 15 phút và gửi email khi tới giờ "Nhắc trước",
@@ -1019,13 +1014,13 @@ const HEAD = {
   BangDiem:     ['Bé', 'Năm học', 'Môn', 'Giữa kỳ 1', 'Cuối kỳ 1', 'Giữa kỳ 2', 'Cuối kỳ 2', 'ĐTB HK1 (tự tính)', 'ĐTB HK2 (tự tính)', 'ĐTB cả năm (tự tính)', 'Ghi chú'],
   ThanhTich:    ['Bé', 'Năm học', 'Cấp', 'Thành tích', 'Mô tả'],
   KeHoach:      ['Bé', 'Nội dung', 'Loại', 'Ngày', 'Giờ', 'Nhắc trước (phút)', 'Trạng thái', 'Ghi chú'],
-  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)']
+  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)']   // nhiều ảnh: mỗi link 1 dòng trong ô
 };
 
 // ======================= WEB APP =======================
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() { return out_({ ok: true, ping: true, version: 3, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+function doGet() { return out_({ ok: true, ping: true, version: 4, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -1033,7 +1028,7 @@ function doPost(e) {
     lock.waitLock(25000);
     const body = JSON.parse(e.postData.contents);
     if (body.token !== SECRET) return out_({ ok: false, error: 'Sai mật khẩu (token)' });
-    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 3 });
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 4 });
     if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
     if (body.action === 'load') {
       if (!hasData_()) return out_({ ok: true, empty: true });
@@ -1204,9 +1199,10 @@ function buildData_(warn) {
       remind: num_(g_(o, 'Nhắc trước (phút)')) || 0, note: txt_(g_(o, 'Ghi chú')), done: done, n1: false, n2: false });
   });
   rowsObj_(ss, SH.KN).forEach(function (o) {
-    const s = kid(o, SH.KN); if (!s) return; const title = txt_(g_(o, 'Tiêu đề')); const url = res(g_(o, 'Liên kết (URL)'));
-    if (!title && !url) return;
-    s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: url, date: iso_(g_(o, 'Ngày'), tz) });
+    const s = kid(o, SH.KN); if (!s) return; const title = txt_(g_(o, 'Tiêu đề'));
+    const urls = String(g_(o, 'Liên kết (URL)') || '').split(/[\r\n]+/).map(res).filter(function (u) { return u; });
+    if (!title && !urls.length) return;
+    s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: urls[0] || '', urls: urls, date: iso_(g_(o, 'Ngày'), tz) });
   });
   return students;
 }
@@ -1254,7 +1250,11 @@ function writeTabs_(ss, data, imgs) {
     });
     (s.achievements || []).forEach(function (a) { tt.push([nm, T_(a.year), T_(a.level), T_(a.title), T_(a.desc)]); });
     (s.plans || []).forEach(function (p) { kh.push([nm, T_(p.title), toLabel_(TYPES, p.type) || 'Khác', dmy_(p.date), T_(p.time), N_(p.remind), p.done ? DONE_T[1] : DONE_T[0], T_(p.note)]); });
-    (s.media || []).forEach(function (m) { kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(stash('md-' + s.id + '-' + m.id, m.url))]); });
+    (s.media || []).forEach(function (m) {
+      const urls = (m.urls && m.urls.length) ? m.urls : (m.url ? [m.url] : []);
+      const links = urls.map(function (u, k) { return stash('md-' + s.id + '-' + m.id + '-' + k, u); });
+      kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(links.join('\n'))]);   // nhiều ảnh: mỗi link 1 dòng
+    });
   });
 
   const all = function (n) { return Array.apply(null, Array(n)).map(function (_, i) { return i + 1; }); };
@@ -1469,10 +1469,13 @@ function guiNhacLich() {
             <button onclick="closeModal('lightboxModal')" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl">
                 <i class="fa-solid fa-xmark"></i>
             </button>
+            <button id="lbPrev" onclick="event.stopPropagation(); albumStep(-1)" class="absolute left-0 sm:-left-12 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white text-lg"><i class="fa-solid fa-chevron-left"></i></button>
+            <button id="lbNext" onclick="event.stopPropagation(); albumStep(1)" class="absolute right-0 sm:-right-12 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white text-lg"><i class="fa-solid fa-chevron-right"></i></button>
             <div id="lightboxContent" class="w-full flex justify-center items-center rounded-2xl overflow-hidden bg-black">
                 <!-- Image or Video dynamically inserted -->
             </div>
             <p id="lightboxCaption" class="text-white text-center text-sm font-bold mt-4"></p>
+            <div id="lbThumbs" class="flex gap-2 mt-3 overflow-x-auto no-scrollbar max-w-full px-1"></div>
         </div>
     </div>
 
@@ -2506,19 +2509,20 @@ function guiNhacLich() {
             student.media.forEach(item => {
                 grid.innerHTML += `
                     <div class="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm group hover:shadow-md transition flex flex-col">
-                        <div class="relative h-32 sm:h-44 bg-slate-900 cursor-pointer overflow-hidden" onclick="openLightbox('${item.url}', '${item.type}', '${item.title}')">
+                        <div class="relative h-32 sm:h-44 bg-slate-900 cursor-pointer overflow-hidden" onclick="openAlbum(${item.id}, 0)">
                             ${
                                 item.type === 'video'
                                 ? `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`
-                                : `<img src="${item.url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">`
+                                : `<img src="${esc(mediaUrls(item)[0] || '')}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">`
                             }
+                            ${mediaUrls(item).length > 1 ? `<span class="absolute bottom-2 left-2 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-images mr-1"></i>${mediaUrls(item).length}</span>` : ''}
                             <button onclick="event.stopPropagation(); openMediaModal(${item.id})" class="absolute top-2 right-12 sm:right-10 bg-slate-900/60 hover:bg-indigo-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="event.stopPropagation(); deleteMediaItem(${item.id})" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-rose-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                         <div class="p-3 flex-grow flex flex-col justify-between">
-                            <h5 class="font-bold text-xs text-slate-800 line-clamp-1">${item.title}</h5>
+                            <h5 class="font-bold text-xs text-slate-800 line-clamp-1">${esc(item.title)}</h5>
                             <span class="text-[11px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.date}</span>
                         </div>
                     </div>
@@ -2526,19 +2530,25 @@ function guiNhacLich() {
             });
         }
 
+        let mediaDraft = [];   // danh sách ảnh của khoảnh khắc đang sửa
         function openMediaModal(id) {
             document.getElementById('mediaForm').reset();
             document.getElementById('mediaEditId').value = id || '';
-            document.querySelector('#mediaModal h3').textContent = id ? 'Sửa Ảnh / Video Kỷ Niệm' : 'Thêm Ảnh / Video Kỷ Niệm';
+            document.querySelector('#mediaModal h3').textContent = id ? 'Sửa Khoảnh Khắc' : 'Thêm Khoảnh Khắc (nhiều ảnh)';
+            mediaDraft = [];
             if (id) {
                 const m = (getCurrentStudent().media || []).find(x => x.id === id);
                 if (m) {
                     document.getElementById('mediaType').value = m.type || 'image';
                     document.getElementById('mediaTitle').value = m.title || '';
-                    document.getElementById('mediaUrl').value = m.url || '';
                     document.getElementById('mediaDate').value = m.date || '';
+                    mediaDraft = mediaUrls(m).slice();
                 }
+            } else {
+                const n = new Date();
+                document.getElementById('mediaDate').value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
             }
+            renderMediaDraft();
             document.getElementById('mediaModal').classList.remove('hidden');
         }
 
@@ -2546,31 +2556,75 @@ function guiNhacLich() {
             // Placeholder for UI toggles if needed
         }
 
-        function handleMediaUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                document.getElementById('mediaUrl').value = evt.target.result;
-            };
-            reader.readAsDataURL(file);
+        // Thu nhỏ ảnh trước khi lưu (giữ chất lượng xem tốt, nhẹ hơn ~10 lần)
+        function compressImage(file, maxSide = 1600, quality = 0.82) {
+            return new Promise(resolve => {
+                const r = new FileReader();
+                r.onload = ev => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const k = Math.min(1, maxSide / Math.max(img.width, img.height));
+                        const c = document.createElement('canvas');
+                        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+                        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                        resolve(c.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve(ev.target.result);
+                    img.src = ev.target.result;
+                };
+                r.readAsDataURL(file);
+            });
         }
+        async function handleMediaUpload(e) {
+            const files = [...(e.target.files || [])];
+            if (!files.length) return;
+            const box = document.getElementById('mediaPreview');
+            box.insertAdjacentHTML('beforeend', `<div id="mediaLoading" class="col-span-4 text-[11px] text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý ${files.length} tệp...</div>`);
+            for (const f of files) {
+                if (f.type.startsWith('video/')) {
+                    if (f.size > 8 * 1024 * 1024) { alert(`Video "${f.name}" quá lớn để lưu trong app. Hãy tải lên YouTube / Google Drive rồi dán link.`); continue; }
+                    mediaDraft.push(await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(f); }));
+                    document.getElementById('mediaType').value = 'video';
+                } else {
+                    mediaDraft.push(await compressImage(f));
+                }
+            }
+            e.target.value = '';
+            renderMediaDraft();
+        }
+        function renderMediaDraft() {
+            const box = document.getElementById('mediaPreview');
+            if (!box) return;
+            box.innerHTML = mediaDraft.map((u, i) => `
+                <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border ${i === 0 ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'}">
+                    ${/^data:video|\.(mp4|webm|mov)(\?|$)|youtube|youtu\.be|drive\.google/i.test(u)
+                        ? `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xl cursor-pointer" onclick="setMediaCover(${i})"><i class="fa-solid fa-circle-play"></i></div>`
+                        : `<img src="${esc(u)}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.src='https://placehold.co/200x200?text=Link'">`}
+                    ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-indigo-600/90 text-white text-[9px] font-bold text-center py-0.5">Ảnh bìa</span>' : ''}
+                    <button type="button" onclick="removeMediaDraft(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                </div>`).join('') + (mediaDraft.length ? `<div class="col-span-4 text-[11px] text-slate-500">${mediaDraft.length} ảnh/video trong khoảnh khắc này</div>` : '');
+        }
+        function setMediaCover(i) { mediaDraft.unshift(mediaDraft.splice(i, 1)[0]); renderMediaDraft(); }
+        function removeMediaDraft(i) { mediaDraft.splice(i, 1); renderMediaDraft(); }
+        function mediaUrls(m) { return (m.urls && m.urls.length) ? m.urls : (m.url ? [m.url] : []); }
 
         function saveMediaItem(e) {
             e.preventDefault();
             const student = getCurrentStudent();
             if (!student.media) student.media = [];
-            const item = {
-                type: document.getElementById('mediaType').value,
-                title: document.getElementById('mediaTitle').value,
-                url: document.getElementById('mediaUrl').value || 'https://placehold.co/600x400/e2e8f0/475569?text=Media',
-                date: document.getElementById('mediaDate').value
-            };
+            const typed = document.getElementById('mediaUrl').value.split(/\s*\n\s*/).map(x => x.trim()).filter(Boolean);
+            const urls = [...mediaDraft, ...typed.filter(u => !mediaDraft.includes(u))];
+            if (!urls.length) { alert('Hãy chọn ít nhất 1 ảnh hoặc dán 1 link.'); return; }
+            const item = { type: document.getElementById('mediaType').value, title: document.getElementById('mediaTitle').value.trim(),
+                           date: document.getElementById('mediaDate').value, urls, url: urls[0] };
+            const before = student.media.slice();
             const editId = Number(document.getElementById('mediaEditId').value) || null;
             const idx = editId ? student.media.findIndex(m => m.id === editId) : -1;
             if (idx !== -1) student.media[idx] = { ...student.media[idx], ...item };
             else student.media.push({ id: Date.now(), ...item });
-            saveData();
+            try { saveData(); }
+            catch (err) { alert('Bộ nhớ trình duyệt đã đầy, không lưu thêm ảnh được. Hãy bớt ảnh hoặc dán link Google Photos / Drive thay cho ảnh tải lên.'); student.media = before; return; }
+            mediaDraft = [];
             renderGallery();
             renderCurrentStudentData();
             closeModal('mediaModal');
@@ -2583,6 +2637,40 @@ function guiNhacLich() {
             renderGallery();
             renderCurrentStudentData();
         }
+
+        let album = { urls: [], i: 0, type: 'image', title: '' };
+        function openAlbum(id, i) {
+            const m = (getCurrentStudent().media || []).find(x => x.id === id);
+            if (!m) return;
+            album = { urls: mediaUrls(m), i: i || 0, type: m.type, title: m.title || '' };
+            showAlbum();
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        }
+        function albumStep(d) { if (album.urls.length < 2) return; album.i = (album.i + d + album.urls.length) % album.urls.length; showAlbum(); }
+        function showAlbum() {
+            const u = album.urls[album.i] || '';
+            const isVid = album.type === 'video' || /^data:video|\.(mp4|webm|mov)(\?|$)/i.test(u);
+            const yt = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/);
+            document.getElementById('lightboxContent').innerHTML = yt
+                ? `<iframe src="https://www.youtube.com/embed/${yt[1]}" class="w-full aspect-video" allowfullscreen></iframe>`
+                : isVid ? `<video src="${esc(u)}" controls autoplay class="max-h-[75vh] max-w-full rounded-xl"></video>`
+                : `<img src="${esc(u)}" class="max-h-[75vh] max-w-full object-contain rounded-xl">`;
+            const n = album.urls.length;
+            document.getElementById('lightboxCaption').textContent = album.title + (n > 1 ? `  ·  ${album.i + 1}/${n}` : '');
+            document.getElementById('lbPrev').style.display = document.getElementById('lbNext').style.display = n > 1 ? '' : 'none';
+            document.getElementById('lbThumbs').innerHTML = n > 1 ? album.urls.map((x, k) => `<img src="${esc(x)}" onclick="event.stopPropagation(); album.i=${k}; showAlbum()" class="w-14 h-14 flex-shrink-0 object-cover rounded-lg cursor-pointer border-2 ${k === album.i ? 'border-white' : 'border-transparent opacity-60'}" onerror="this.src='https://placehold.co/80x80?text=%E2%96%B6'">`).join('') : '';
+        }
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('lightboxModal').classList.contains('hidden')) return;
+            if (e.key === 'ArrowLeft') albumStep(-1);
+            if (e.key === 'ArrowRight') albumStep(1);
+            if (e.key === 'Escape') closeModal('lightboxModal');
+        });
+        (() => {   // vuốt trái/phải trên điện thoại
+            let x0 = null;
+            document.addEventListener('touchstart', e => { if (!document.getElementById('lightboxModal').classList.contains('hidden')) x0 = e.touches[0].clientX; }, { passive: true });
+            document.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) albumStep(dx < 0 ? 1 : -1); }, { passive: true });
+        })();
 
         function openLightbox(url, type, caption) {
             const modal = document.getElementById('lightboxModal');
@@ -2618,14 +2706,10 @@ function guiNhacLich() {
             document.getElementById('studentModal').classList.remove('hidden');
         }
 
-        function handleImageUpload(e, targetId) {
+        async function handleImageUpload(e, targetId) {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                document.getElementById(targetId).value = evt.target.result;
-            };
-            reader.readAsDataURL(file);
+            document.getElementById(targetId).value = await compressImage(file, 600, 0.85);
         }
 
         function saveStudentInfo(e) {
@@ -2761,7 +2845,6 @@ function guiNhacLich() {
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span class="text-[10px] font-extrabold px-2 py-1 rounded-full whitespace-nowrap ${relCls}">${p.done ? 'Đã xong' : relTime(t)}</span>
-                        <button onclick="downloadIcs('${s.id}', ${p.id})" title="Thêm vào lịch điện thoại (.ics)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center"><i class="fa-regular fa-calendar-plus"></i></button>
                     </div>
                 </div>`;
         }
@@ -2920,11 +3003,11 @@ function guiNhacLich() {
         function updateNotifBar() {
             let html;
             if (!('Notification' in window)) {
-                html = `<div class="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i>Trình duyệt này không hỗ trợ thông báo hệ thống — nhắc hẹn vẫn hiện ngay trên trang khi đang mở. Dùng nút lịch (.ics) để điện thoại tự nhắc.</div>`;
+                html = `<div class="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i>Trình duyệt này không hỗ trợ thông báo hệ thống — nhắc hẹn vẫn hiện ngay trên trang khi đang mở. Muốn nhắc cả khi đóng trang: bật email nhắc lịch trong Google Sheet.</div>`;
             } else if (Notification.permission === 'granted') {
-                html = `<div class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell mr-1"></i>Đã bật thông báo. Nhắc hẹn hoạt động khi trang đang mở; muốn nhắc cả khi đóng trang hãy bấm biểu tượng lịch <i class="fa-regular fa-calendar-plus"></i> để thêm vào lịch điện thoại.</div>`;
+                html = `<div class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell mr-1"></i>Đã bật thông báo. Nhắc hẹn hoạt động khi trang đang mở; muốn nhắc cả khi đóng trang hãy bật email nhắc lịch trong Google Sheet.</div>`;
             } else if (Notification.permission === 'denied') {
-                html = `<div class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell-slash mr-1"></i>Thông báo đang bị chặn trong trình duyệt. Nhắc hẹn vẫn hiện trên trang; để nhận thông báo hệ thống hãy cho phép trong cài đặt trang web, hoặc dùng nút lịch (.ics).</div>`;
+                html = `<div class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"><i class="fa-solid fa-bell-slash mr-1"></i>Thông báo đang bị chặn trong trình duyệt. Nhắc hẹn vẫn hiện trên trang; để nhận thông báo hệ thống hãy cho phép trong cài đặt trang web, hoặc bật email nhắc lịch trong Google Sheet.</div>`;
             } else {
                 html = `<div class="flex items-center justify-between gap-3 text-[11px] text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2"><span><i class="fa-solid fa-bell mr-1"></i>Bật thông báo để được nhắc khi sắp tới giờ hẹn.</span><button onclick="requestNotify()" class="flex-shrink-0 bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-indigo-700">Bật thông báo</button></div>`;
             }
@@ -3223,8 +3306,8 @@ function guiNhacLich() {
             try { ping = await syncRequest({ action: 'ping', token: syncCfg.token }); }
             catch (e) { out.push('✗ Gọi thử thất bại: ' + e.message); show(); return; }
             out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
-            if ((ping.version || 0) < 3) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
-            else out.push('✓ Mã Apps Script là bản mới nhất (v3)');
+            if ((ping.version || 0) < 4) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v4)');
             show();
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -3481,6 +3564,7 @@ function guiNhacLich() {
             return slot.session === 'them' ? 'từ ' + st : st + '–' + addMin(st, 45);
         }
         function migrateData() {
+            (studentsData || []).forEach(st => (st.media || []).forEach(m => { if (!Array.isArray(m.urls)) m.urls = m.url ? [m.url] : []; }));
             (studentsData || []).forEach(st => Object.values(st.academicYears || {}).forEach(yd => (yd.timetable || []).forEach(it => {
                 if (it.teacher !== undefined) return;
                 const m = String(it.note || '').match(/^\s*(?:GV|Giáo viên)\s*:\s*(.+)$/i);
