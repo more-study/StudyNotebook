@@ -892,6 +892,11 @@
                     <input type="text" id="mediaTitle" placeholder="Lễ Khai Giảng, Thi Văn Nghệ..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Khoảnh khắc của bé nào? <span class="font-normal text-slate-400">(chọn nhiều bé nếu là sự kiện chung)</span></label>
+                    <input type="hidden" id="mediaKids">
+                    <div id="mediaKidChips" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Cảm xúc</label>
                     <input type="hidden" id="mediaFeeling">
                     <div id="feelingChips" class="flex flex-wrap gap-1.5"></div>
@@ -1075,13 +1080,13 @@ const HEAD = {
   BangDiem:     ['Bé', 'Năm học', 'Môn', 'Giữa kỳ 1', 'Cuối kỳ 1', 'Giữa kỳ 2', 'Cuối kỳ 2', 'ĐTB HK1 (tự tính)', 'ĐTB HK2 (tự tính)', 'ĐTB cả năm (tự tính)', 'Ghi chú'],
   ThanhTich:    ['Bé', 'Năm học', 'Cấp', 'Thành tích', 'Mô tả'],
   KeHoach:      ['Bé', 'Nội dung', 'Loại', 'Ngày', 'Giờ', 'Nhắc trước (phút)', 'Trạng thái', 'Ghi chú'],
-  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)', 'Cảm xúc', 'Nội dung', 'Bình luận', 'Thương']   // nhiều ảnh: mỗi link 1 dòng trong ô
+  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)', 'Cảm xúc', 'Nội dung', 'Bình luận', 'Thương', 'Các bé (sự kiện chung)']   // nhiều ảnh: mỗi link 1 dòng trong ô
 };
 
 // ======================= WEB APP =======================
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() { return out_({ ok: true, ping: true, version: 8, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+function doGet() { return out_({ ok: true, ping: true, version: 9, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
 
 function doPost(e) {
   // Tải ảnh / video lên Drive: không cần khóa Sheet, để lưu dữ liệu không phải chờ
@@ -1097,7 +1102,7 @@ function doPost(e) {
   try {
     lock.waitLock(25000);
     const body = body0;
-    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 8, driveFolderUrl: driveFolderUrl_() });
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 9, driveFolderUrl: driveFolderUrl_() });
     if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
     if (body.action === 'load') {
       if (!hasData_()) return out_({ ok: true, empty: true });
@@ -1279,8 +1284,16 @@ function buildData_(warn) {
       const i = x.indexOf(': '); return { id: k + 1, author: i > 0 ? x.slice(0, i).trim() : '', text: i > 0 ? x.slice(i + 2) : x.trim(), ts: 0 }; });
     const likes = txt_(g_(o, 'Thương')).split(/\s*,\s*/).filter(function (x) { return x; });
     s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: urls[0] || '', urls: urls, date: iso_(g_(o, 'Ngày'), tz),
-                   feeling: toKey_(FEEL_T, g_(o, 'Cảm xúc'), ''), content: txt_(g_(o, 'Nội dung')), comments: cms, likes: likes });
+                   feeling: toKey_(FEEL_T, g_(o, 'Cảm xúc'), ''), content: txt_(g_(o, 'Nội dung')), comments: cms, likes: likes,
+                   kidNames: txt_(g_(o, 'Các bé (sự kiện chung)')) });
   });
+  // sự kiện chung: đổi tên các bé -> mã
+  students.forEach(function (s) { (s.media || []).forEach(function (m) {
+    const names = (m.kidNames || '').split(/\s*,\s*/).filter(function (x) { return x; });
+    m.kids = names.map(function (n) { const k = byName[key_(n)]; return k ? k.id : null; }).filter(function (x) { return x; });
+    if (m.kids.indexOf(s.id) < 0) m.kids.unshift(s.id);
+    delete m.kidNames;
+  }); });
   return students;
 }
 
@@ -1363,7 +1376,8 @@ function writeTabs_(ss, data, legacyImgs, refs) {
       const links = urls.map(function (u, k) { return stash('md-' + s.id + '-' + m.id + '-' + k, u); });
       const cm = (m.comments || []).map(function (c) { return (c.author || '') + ': ' + String(c.text || '').replace(/\n/g, ' '); }).join('\n');
       kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(links.join('\n')),
-               T_(toLabel_(FEEL_T, m.feeling)), T_(m.content), T_(cm), T_((m.likes || []).join(', '))]);   // nhiều ảnh: mỗi link 1 dòng
+               T_(toLabel_(FEEL_T, m.feeling)), T_(m.content), T_(cm), T_((m.likes || []).join(', ')),
+               T_((m.kids || []).map(function (id) { const k = data.filter(function (x) { return x.id === id; })[0]; return k ? k.name : ''; }).filter(function (x) { return x; }).join(', '))]);   // nhiều ảnh: mỗi link 1 dòng
     });
   });
 
@@ -1391,7 +1405,7 @@ function writeTabs_(ss, data, legacyImgs, refs) {
   put_(ss, SH.KH, HEAD.KeHoach, kh, all(8), [], function (sh, n) {
     dvKid_(ss, sh, n); dvList_(sh, 3, TYPES.map(function (d) { return d[1]; }), n); dvList_(sh, 7, DONE_T, n);
   });
-  put_(ss, SH.KN, HEAD.KyNiem, kn, all(9), [], function (sh, n) { dvKid_(ss, sh, n); dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), n); });
+  put_(ss, SH.KN, HEAD.KyNiem, kn, all(10), [], function (sh, n) { dvKid_(ss, sh, n); dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), n); });
 }
 
 // các mã ảnh đang có trong sheet _Anh
@@ -2142,7 +2156,7 @@ function authOk_(b) {
             document.getElementById('bannerIdIssueDate').innerText = formatDateVN(student.idIssueDate);
 
             document.getElementById('bannerAwardsCount').innerText = (student.achievements || []).length;
-            document.getElementById('bannerMediaCount').innerText = (student.media || []).length;
+            document.getElementById('bannerMediaCount').innerText = postsForKid(student.id).length;
 
             renderTimetable();
             renderGrades();
@@ -2706,14 +2720,16 @@ function authOk_(b) {
             if (ct) ct.textContent = `Hôm nay ${shortName(student.name)} có gì vui?`;
             // giữ chữ đang gõ trong ô bình luận khi trang tự cập nhật
             const focused = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cmt : null;
-            const posts = [...(student.media || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || b.id - a.id);
+            const posts = postsForKid(student.id).sort((a, b) => String(b.m.date || '').localeCompare(String(a.m.date || '')) || b.m.id - a.m.id);
             if (!posts.length) {
                 grid.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-3xl border border-dashed border-slate-200">Chưa có khoảnh khắc nào. Bấm "Đăng khoảnh khắc" để lưu lại kỷ niệm đầu tiên!</div>`;
                 return;
             }
             const me = (() => { try { return localStorage.getItem('family_author_name') || ''; } catch (e) { return ''; } })();
             let lastMonth = null, html = '';
-            posts.forEach(item => {
+            posts.forEach(({ m: item, owner }) => {
+                const pk = postKids(item, owner), shared = pk.length > 1;
+                const ppl = [student.id, ...pk.filter(x => x !== student.id)].map(id => studentsData.find(s => s.id === id)).filter(Boolean);
                 const d = item.date ? new Date(item.date + 'T00:00:00') : null;
                 const mk = d ? `Tháng ${d.getMonth() + 1}, ${d.getFullYear()}` : 'Chưa có ngày';
                 if (mk !== lastMonth) {
@@ -2730,9 +2746,9 @@ function authOk_(b) {
                     <span class="absolute left-[1px] top-6 w-2.5 h-2.5 rounded-full bg-slate-300 ring-4 ring-slate-50"></span>
                     <article class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="flex items-start gap-3 p-4 pb-2">
-                            <img src="${esc(student.avatar || '')}" class="w-10 h-10 rounded-full object-cover bg-slate-100 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=%F0%9F%91%B6'">
+                            <div class="flex -space-x-3 flex-shrink-0">${ppl.slice(0, 3).map((p, k) => `<img src="${esc(p.avatar || '')}" title="${esc(p.name)}" class="w-10 h-10 rounded-full object-cover bg-slate-100 ring-2 ring-white" style="z-index:${5 - k}" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=%F0%9F%91%B6'">`).join('')}${ppl.length > 3 ? `<span class="w-10 h-10 rounded-full bg-slate-200 ring-2 ring-white flex items-center justify-center text-xs font-black text-slate-600">+${ppl.length - 3}</span>` : ''}</div>
                             <div class="min-w-0 flex-1">
-                                <div class="text-sm leading-snug"><b class="text-slate-800">${esc(shortName(student.name))}</b>${f ? ` <span class="text-slate-500">đang cảm thấy ${f[1]} <b class="text-slate-700">${f[2]}</b></span>` : ''}</div>
+                                <div class="text-sm leading-snug"><b class="text-slate-800">${esc(kidNames(pk, student.id))}</b>${f ? ` <span class="text-slate-500">đang cảm thấy ${f[1]} <b class="text-slate-700">${f[2]}</b></span>` : ''}${shared ? ` <span class="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full align-middle"><i class="fa-solid fa-people-group"></i>Sự kiện chung</span>` : ''}</div>
                                 <div class="text-[12px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${esc(relDate(item.date))}${item.date && relDate(item.date) !== formatDateVN(item.date) ? ' · ' + formatDateVN(item.date) : ''}</div>
                             </div>
                             <button onclick="openMediaModal(${item.id})" title="Sửa bài" class="w-8 h-8 rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><i class="fa-solid fa-pen text-xs"></i></button>
@@ -2775,7 +2791,42 @@ function authOk_(b) {
             Object.entries(commentDrafts).forEach(([id, v]) => { const el = document.getElementById('cin-' + id); if (el) el.value = v; });
             if (focused) { const el = document.getElementById('cin-' + focused); if (el) { el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } }
         }
-        function findPost(id) { return (getCurrentStudent().media || []).find(m => m.id === id); }
+        // Bài viết nằm ở hồ sơ "bé đăng" (owner); trường kids = danh sách các bé có mặt -> hiện ở dòng thời gian của từng bé
+        function findPostAny(id) {
+            for (const st of studentsData) { const m = (st.media || []).find(x => x.id === id); if (m) return { post: m, owner: st }; }
+            return { post: null, owner: null };
+        }
+        function findPost(id) { return findPostAny(id).post; }
+        function postKids(m, owner) {
+            const ids = (Array.isArray(m.kids) && m.kids.length ? m.kids : [owner.id]).filter(id => studentsData.some(s => s.id === id));
+            return ids.includes(owner.id) ? ids : [owner.id, ...ids];
+        }
+        function postsForKid(kidId) {
+            const out = [];
+            studentsData.forEach(owner => (owner.media || []).forEach(m => { if (postKids(m, owner).includes(kidId)) out.push({ m, owner }); }));
+            return out;
+        }
+        function kidNames(ids, firstId) {
+            const ord = [...ids].sort((a, b) => (a === firstId ? -1 : b === firstId ? 1 : 0));
+            const names = ord.map(id => shortName((studentsData.find(s => s.id === id) || {}).name || ''));
+            return names.length <= 1 ? names.join('') : names.length === 2 ? names.join(' và ') : names.slice(0, -1).join(', ') + ' và ' + names.slice(-1);
+        }
+        function renderKidChips() {
+            const sel = (document.getElementById('mediaKids').value || '').split(',').filter(Boolean);
+            document.getElementById('mediaKidChips').innerHTML = studentsData.map(s => {
+                const on = sel.includes(s.id);
+                return `<button type="button" onclick="toggleMediaKid('${s.id}')" class="flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full border text-xs font-bold transition ${on ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}">
+                    <img src="${esc(s.avatar || '')}" class="w-6 h-6 rounded-full object-cover bg-slate-100" onerror="this.onerror=null;this.src='https://placehold.co/40x40?text=%F0%9F%91%B6'">${esc(shortName(s.name))}${on ? ' <i class="fa-solid fa-check text-[10px]"></i>' : ''}</button>`;
+            }).join('');
+        }
+        function toggleMediaKid(id) {
+            const el = document.getElementById('mediaKids');
+            let sel = (el.value || '').split(',').filter(Boolean);
+            sel = sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id];
+            if (!sel.length) return;          // phải có ít nhất 1 bé
+            el.value = sel.join(',');
+            renderKidChips();
+        }
         function focusComment(id) {
             openComments[id] = true;
             const box = document.getElementById('cmts-' + id);
@@ -2819,8 +2870,9 @@ function authOk_(b) {
             document.querySelector('#mediaModal h3').textContent = id ? 'Sửa bài viết' : 'Đăng khoảnh khắc của ' + shortName(getCurrentStudent().name);
             mediaDraft = []; mediaNewUploads = []; mediaUploading = 0; setMediaUploadStatus('');
             if (id) {
-                const m = (getCurrentStudent().media || []).find(x => x.id === id);
+                const { post: m, owner: ow } = findPostAny(id);
                 if (m) {
+                    document.getElementById('mediaKids').value = postKids(m, ow).join(',');
                     document.getElementById('mediaType').value = m.type || 'image';
                     document.getElementById('mediaTitle').value = m.title || '';
                     document.getElementById('mediaDate').value = m.date || '';
@@ -2832,7 +2884,8 @@ function authOk_(b) {
                 const n = new Date();
                 document.getElementById('mediaDate').value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
             }
-            if (!id) { document.getElementById('mediaFeeling').value = ''; document.getElementById('mediaContent').value = ''; }
+            if (!id) { document.getElementById('mediaFeeling').value = ''; document.getElementById('mediaContent').value = ''; document.getElementById('mediaKids').value = getCurrentStudent().id; }
+            renderKidChips();
             renderFeelingChips();
             renderMediaDraft();
             document.getElementById('mediaModal').classList.remove('hidden');
@@ -2920,7 +2973,11 @@ function authOk_(b) {
 
         function saveMediaItem(e) {
             e.preventDefault();
-            const student = getCurrentStudent();
+            const editId0 = Number(document.getElementById('mediaEditId').value) || null;
+            const kids = (document.getElementById('mediaKids').value || '').split(',').filter(Boolean);
+            // bài cũ: giữ ở hồ sơ đang chứa nó (nếu bé đó vẫn được chọn); bài mới: lưu ở bé đầu tiên được chọn
+            let student = editId0 ? findPostAny(editId0).owner : null;
+            if (!student || !kids.includes(student.id)) student = studentsData.find(s => s.id === (kids.includes(getCurrentStudent().id) ? getCurrentStudent().id : kids[0])) || getCurrentStudent();
             if (!student.media) student.media = [];
             const typed = document.getElementById('mediaUrl').value.split(/\s*\n\s*/).map(x => x.trim()).filter(Boolean);
             const urls = [...mediaDraft, ...typed.filter(u => !mediaDraft.includes(u))];
@@ -2928,10 +2985,13 @@ function authOk_(b) {
             if (!urls.length && !content) { alert('Hãy thêm ít nhất 1 ảnh hoặc viết vài dòng nội dung.'); return; }
             const item = { type: document.getElementById('mediaType').value, title: document.getElementById('mediaTitle').value.trim(),
                            date: document.getElementById('mediaDate').value, urls, url: urls[0] || '',
-                           feeling: document.getElementById('mediaFeeling').value, content };
+                           feeling: document.getElementById('mediaFeeling').value, content, kids: kids.length ? kids : [student.id] };
             if (mediaUploading > 0) { alert('Đang tải ảnh lên, chờ xong rồi bấm lưu nhé.'); return; }
             const before = student.media.slice();
-            const editId = Number(document.getElementById('mediaEditId').value) || null;
+            const editId = editId0;
+            // bài đổi sang hồ sơ khác (bé đăng ban đầu bị bỏ chọn): chuyển bài sang hồ sơ mới
+            const prev = editId ? findPostAny(editId) : { post: null, owner: null };
+            if (prev.post && prev.owner !== student) { prev.owner.media = prev.owner.media.filter(x => x.id !== editId); student.media.push(prev.post); }
             const idx = editId ? student.media.findIndex(m => m.id === editId) : -1;
             const oldUrls = idx !== -1 ? mediaUrls(student.media[idx]) : [];
             if (idx !== -1) student.media[idx] = { ...student.media[idx], ...item };
@@ -2946,9 +3006,10 @@ function authOk_(b) {
         }
 
         function deleteMediaItem(id) {
-            const student = getCurrentStudent();
-            const m = student.media.find(x => x.id === id);
-            if (!m || !confirm(`Xóa khoảnh khắc "${m.title || ''}" (${mediaUrls(m).length} ảnh/video)?` + (mediaUrls(m).some(driveId) ? '\nFile trên Google Drive sẽ được chuyển vào Thùng rác (khôi phục được trong 30 ngày).' : ''))) return;
+            const { post: m, owner: student } = findPostAny(id);
+            if (!m) return;
+            const shared = postKids(m, student).length > 1;
+            if (!m || !confirm(`Xóa khoảnh khắc "${m.title || ''}" (${mediaUrls(m).length} ảnh/video)?` + (shared ? `\nĐây là khoảnh khắc chung của ${kidNames(postKids(m, student))}: bài sẽ bị xóa ở tất cả các bé.` : '') + (mediaUrls(m).some(driveId) ? '\nFile trên Google Drive sẽ được chuyển vào Thùng rác (khôi phục được trong 30 ngày).' : ''))) return;
             student.media = student.media.filter(x => x.id !== id);
             trashDriveFiles(mediaUrls(m));
             saveData();
@@ -3032,7 +3093,7 @@ function authOk_(b) {
 
         let album = { urls: [], i: 0, type: 'image', title: '' };
         function openAlbum(id, i) {
-            const m = (getCurrentStudent().media || []).find(x => x.id === id);
+            const m = findPost(id);
             if (!m) return;
             album = { urls: mediaUrls(m), i: i || 0, type: m.type, title: m.title || '' };
             showAlbum();
@@ -3137,6 +3198,11 @@ function authOk_(b) {
             const st = getCurrentStudent();
             if (studentsData.length <= 1) { alert('Cần giữ lại ít nhất 1 hồ sơ.'); return; }
             if (!confirm(`Xóa hồ sơ "${st.name}"?\n\nToàn bộ thông tin, thời khóa biểu, bảng điểm, thành tích, kế hoạch và ảnh của bé sẽ bị xóa` + (syncConfigured() ? ' (kể cả trên Google Sheet sau khi đồng bộ; Sheet vẫn giữ 1 bản sao lưu liền trước).' : '.'))) return;
+            // khoảnh khắc chung: chuyển sang bé khác có mặt để không bị mất
+            (st.media || []).forEach(m => {
+                const others = (m.kids || []).filter(id => id !== st.id && studentsData.some(x => x.id === id));
+                if (others.length) { const to = studentsData.find(x => x.id === others[0]); m.kids = others; (to.media = to.media || []).push(m); }
+            });
             studentsData = studentsData.filter(x => x.id !== st.id);
             currentStudentId = studentsData[0].id;
             saveData();
@@ -3789,8 +3855,8 @@ function authOk_(b) {
             syncServerVersion = ping.version || 1;
             out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
             if (ping.driveFolderUrl) { syncCfg.driveFolderUrl = ping.driveFolderUrl; saveSyncCfg(); }
-            if ((ping.version || 0) < 8) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
-            else out.push('✓ Mã Apps Script là bản mới nhất (v8)');
+            if ((ping.version || 0) < 9) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v9)');
             show();
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -4093,6 +4159,12 @@ function authOk_(b) {
         let fbLast = {}, fbOrder = {}, fbApplying = false, fbFirstSnap = true, fbHadCache = false, fbMigrating = false;
         let fbBase = false, fbDeferred = false;   // chỉ ghi lên Firebase khi đã biết dữ liệu trên máy chủ (tránh ghi đè bằng dữ liệu trống)
         const kidsCol = () => fbDb.collection('families').doc(FAMILY_ID).collection('kids');
+        // so sánh không phụ thuộc thứ tự khóa (Firestore tự sắp xếp khóa theo ABC)
+        function canon(v) {
+            if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+            if (v && typeof v === 'object') return '{' + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+            return JSON.stringify(v === undefined ? null : v);
+        }
 
         function showFbOverlay(kind, msg) {
             const ov = document.getElementById('fbOverlay');
@@ -4158,16 +4230,16 @@ function authOk_(b) {
         function fbSubscribe() {
             if (fbUnsub) fbUnsub();
             fbFirstSnap = true;
-            fbUnsub = kidsCol().orderBy('order').onSnapshot(snap => {
+            fbUnsub = kidsCol().orderBy('order').onSnapshot({ includeMetadataChanges: true }, snap => {
                 if (snap.empty) {
                     if (!snap.metadata.fromCache) { fbBase = true; fbFirstMigration(); }
                     return;
                 }
                 fbLast = {}; fbOrder = {};
                 const remote = [];
-                snap.docs.forEach(d => { const v = d.data(); if (v && v.data) { remote.push(v.data); fbLast[d.id] = JSON.stringify(v.data); fbOrder[d.id] = v.order; } });
+                snap.docs.forEach(d => { const v = d.data(); if (v && v.data) { remote.push(v.data); fbLast[d.id] = canon(v.data); fbOrder[d.id] = v.order; } });
                 fbBase = true;
-                if (!fbTimer && remote.length && JSON.stringify(remote) !== JSON.stringify(studentsData)) {
+                if (!fbTimer && remote.length && canon(remote) !== canon(studentsData)) {
                     fbApplying = true;
                     studentsData = remote;
                     migrateData();
@@ -4179,6 +4251,7 @@ function authOk_(b) {
                 }
                 showFbOverlay(null);
                 if (!snap.metadata.fromCache) setSyncState(snap.metadata.hasPendingWrites ? 'busy' : 'ok', snap.metadata.hasPendingWrites ? 'Đang lưu lên Firebase...' : 'Đã đồng bộ với Firebase');
+                else if (syncState !== 'ok') setSyncState('busy', navigator.onLine ? 'Đang dùng dữ liệu trên máy, đang kết nối Firebase...' : 'Đang ngoại tuyến · dùng dữ liệu trên máy');
                 if (fbDeferred) { fbDeferred = false; fbSchedulePush(); }
                 if (fbFirstSnap && !snap.metadata.fromCache) {
                     fbFirstSnap = false;
@@ -4204,9 +4277,9 @@ function authOk_(b) {
             let n = 0;
             studentsData.forEach((st, i) => {
                 ids.add(st.id);
-                const j = JSON.stringify(st);
+                const j = canon(st);
                 if (j !== fbLast[st.id] || fbOrder[st.id] !== i) {
-                    batch.set(col.doc(st.id), { data: JSON.parse(j), order: i, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: fbUser.email });
+                    batch.set(col.doc(st.id), { data: JSON.parse(JSON.stringify(st)), order: i, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: fbUser.email });
                     fbLast[st.id] = j; fbOrder[st.id] = i; n++;
                 }
             });
