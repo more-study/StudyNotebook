@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase (đăng nhập Google + cơ sở dữ liệu Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -881,8 +885,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Dán link ảnh / video (mỗi link 1 dòng)</label>
                     <textarea id="mediaUrl" rows="2" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
-                    <p class="text-[12px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh</b> từ thiết bị (ảnh tự thu nhỏ cho nhẹ). Bấm vào ảnh để đặt làm ảnh bìa.</p>
+                    <p class="text-[12px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh / video</b> từ thiết bị: tự tải lên <b>Google Drive</b> (giữ nguyên độ nét; video tối đa 30MB). Bấm vào ảnh để đặt làm ảnh bìa.</p>
                     <input type="file" id="mediaFile" accept="image/*,video/*" multiple onchange="handleMediaUpload(event)" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-600 file:font-semibold hover:file:bg-indigo-100">
+                    <div id="mediaUploadStatus" class="text-[12px] font-bold mt-2"></div>
                     <div id="mediaPreview" class="grid grid-cols-4 gap-2 mt-3"></div>
                 </div>
                 <div>
@@ -924,6 +929,19 @@
         </div>
     </div>
 
+    <!-- FIREBASE: ĐĂNG NHẬP / ĐANG TẢI -->
+    <div id="fbOverlay" class="hidden fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center text-2xl"><i class="fa-solid fa-graduation-cap"></i></div>
+            <h3 class="text-lg font-extrabold text-slate-800">Sổ Học Tập Gia Đình</h3>
+            <div id="fbSpinner" class="hidden text-indigo-500 text-2xl"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            <p id="fbOverlayMsg" class="text-sm text-slate-600 leading-relaxed"></p>
+            <button id="fbLoginBtn" onclick="fbLogin()" class="hidden w-full flex items-center justify-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-2xl shadow-sm"><i class="fa-brands fa-google text-rose-500"></i> Đăng nhập bằng Google</button>
+            <button id="fbRetryBtn" onclick="fbFirstMigration()" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-2xl">Thử lại</button>
+            <button id="fbLogoutBtn" onclick="fbLogout()" class="hidden w-full text-sm font-bold text-slate-500 hover:text-rose-600 py-1">Đăng xuất / đổi tài khoản</button>
+        </div>
+    </div>
+
     <!-- MODAL: ĐỒNG BỘ GOOGLE SHEET -->
     <div id="syncModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
         <div class="bg-white rounded-t-3xl sm:rounded-3xl modal-box max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -932,6 +950,8 @@
                 <button onclick="closeModal('syncModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
 
+            <div id="fbUserBox" class="hidden text-xs font-bold rounded-xl px-3 py-2.5 bg-indigo-50 border border-indigo-100 text-indigo-800"></div>
+            <a id="driveFolderLink" href="#" target="_blank" rel="noopener" class="hidden text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5"><i class="fa-brands fa-google-drive mr-1"></i>Mở thư mục Ảnh & Video trên Google Drive</a>
             <div id="syncStatus" class="text-xs font-bold rounded-xl px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-600">Chưa kết nối</div>
 
             <details id="syncGuide" class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
@@ -988,6 +1008,14 @@
  *   KeHoach       : lịch hẹn, nhắc việc
  *   KyNiem        : ảnh / video kỷ niệm (dán link; 1 khoảnh khắc nhiều ảnh = mỗi link 1 dòng, Alt+Enter để xuống dòng)
  *
+ * FIREBASE (từ phiên bản 7): dữ liệu chính nằm trên Firebase Firestore. Google Sheet này là BẢN SAO tự cập nhật
+ *   sau mỗi thay đổi trong app (để xem, lọc, in, sao lưu và gửi email nhắc lịch). Sửa trong Sheet không quay ngược vào app.
+ *   Lần đầu dán mã này: chọn hàm capQuyenDrive rồi bấm ▶ Chạy để cấp quyền (Drive + gọi kiểm tra đăng nhập).
+ *
+ * ẢNH & VIDEO: lưu trên Google Drive, thư mục "Sổ Học Tập Gia Đình - Ảnh & Video" (mỗi bé 1 thư mục con).
+ *   File được chia sẻ "Ai có đường liên kết đều xem được" để app hiển thị; xóa ảnh trong app = chuyển file vào Thùng rác Drive.
+ *   Lần đầu dán mã này: chọn hàm capQuyenDrive ở thanh trên rồi bấm ▶ Chạy để cấp quyền Drive.
+ *
  * EMAIL NHẮC LỊCH: mở file Sheet > menu "📧 Nhắc lịch" > "Bật gửi email nhắc tự động" (cấp quyền 1 lần).
  *   Google sẽ tự kiểm tra bảng KeHoach mỗi 15 phút và gửi email khi tới giờ "Nhắc trước",
  *   kể cả khi không mở app. Đánh dấu "Đã xong" thì không gửi nữa.
@@ -998,6 +1026,10 @@
 
 // >>> ĐỔI thành mật khẩu riêng của bạn, rồi nhập đúng mật khẩu này vào app <<<
 const SECRET = 'doi-mat-khau-nay';
+
+// >>> FIREBASE: app online đăng nhập Google, Apps Script kiểm tra đúng người nhà mới cho dùng <<<
+const FIREBASE_API_KEY = 'AIzaSyCszH-Yg-FZfRGUDM2p_f85CFeia6Z8S0o';
+const ALLOWED_EMAILS = ['thicckhq@gmail.com'];   // thêm người nhà: 'a@gmail.com', 'b@gmail.com'
 
 // >>> EMAIL NHẮC LỊCH (bảng KeHoach) <<<
 // Để trống = gửi về Gmail của chủ file Sheet. Nhiều người nhận: 'a@gmail.com, b@gmail.com'
@@ -1029,15 +1061,23 @@ const HEAD = {
 // ======================= WEB APP =======================
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() { return out_({ ok: true, ping: true, version: 5, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+function doGet() { return out_({ ok: true, ping: true, version: 7, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
 
 function doPost(e) {
+  // Tải ảnh / video lên Drive: không cần khóa Sheet, để lưu dữ liệu không phải chờ
+  var body0 = null;
+  try { body0 = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'Dữ liệu gửi lên không hợp lệ' }); }
+  if (!authOk_(body0)) return out_({ ok: false, error: 'Sai mật khẩu (token) hoặc tài khoản chưa được cấp quyền' });
+  try {
+    if (body0.action === 'upload') return out_(upload_(body0));
+    if (body0.action === 'trash') return out_(trash_(body0.ids));
+  } catch (err) { return out_({ ok: false, error: String(err) }); }
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(25000);
-    const body = JSON.parse(e.postData.contents);
-    if (body.token !== SECRET) return out_({ ok: false, error: 'Sai mật khẩu (token)' });
-    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 5 });
+    const body = body0;
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 7, driveFolderUrl: driveFolderUrl_() });
     if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
     if (body.action === 'load') {
       if (!hasData_()) return out_({ ok: true, empty: true });
@@ -1482,6 +1522,88 @@ function guiNhacLich() {
   const all = props.getProperties();
   Object.keys(all).forEach(function (k) { if (k.indexOf('sent:') === 0 && now - Number(all[k]) > 60 * 86400000) props.deleteProperty(k); });
 }
+
+
+// ======================= ẢNH & VIDEO TRÊN GOOGLE DRIVE =======================
+const DRIVE_FOLDER_NAME = 'Sổ Học Tập Gia Đình - Ảnh & Video';
+
+// Chạy hàm này 1 lần trong trình soạn thảo Apps Script để cấp quyền Google Drive
+function capQuyenDrive() {
+  const f = driveRoot_();
+  Logger.log('Thư mục ảnh: ' + f.getUrl());
+  alert_('Đã cấp quyền Google Drive.\nẢnh và video sẽ lưu tại thư mục:\n' + f.getName() + '\n' + f.getUrl());
+}
+function driveRoot_() {
+  const p = PropertiesService.getScriptProperties();
+  const id = p.getProperty('driveFolder');
+  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) {} }
+  const f = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+  p.setProperty('driveFolder', f.getId());
+  return f;
+}
+function driveFolderUrl_() {
+  const id = PropertiesService.getScriptProperties().getProperty('driveFolder');
+  if (!id) return '';
+  try { return DriveApp.getFolderById(id).getUrl(); } catch (e) { return ''; }
+}
+function kidFolder_(root, name) {
+  name = txt_(name) || 'Chung';
+  const it = root.getFoldersByName(name);
+  return it.hasNext() ? it.next() : root.createFolder(name);
+}
+function upload_(b) {
+  if (!b.data) return { ok: false, error: 'Không có dữ liệu file' };
+  const mime = String(b.mime || 'application/octet-stream');
+  const root = driveRoot_();
+  const blob = Utilities.newBlob(Utilities.base64Decode(b.data), mime, String(b.name || ('file-' + Date.now())));
+  const f = kidFolder_(root, b.kid).createFile(blob);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }
+  catch (e) { return { ok: false, error: 'Đã lưu lên Drive nhưng không bật được chia sẻ bằng link (tài khoản có thể đang chặn): ' + e }; }
+  const id = f.getId();
+  return { ok: true, id: id, folderUrl: root.getUrl(),
+           url: /^video\//.test(mime) ? 'https://drive.google.com/file/d/' + id + '/preview' : 'https://lh3.googleusercontent.com/d/' + id };
+}
+// Chỉ chuyển vào Thùng rác những file nằm trong thư mục ảnh của app
+function trash_(ids) {
+  const root = driveRoot_(), rid = root.getId();
+  var n = 0;
+  (ids || []).forEach(function (id) {
+    try {
+      const f = DriveApp.getFileById(id);
+      var inside = false;
+      const ps = f.getParents();
+      while (ps.hasNext() && !inside) {
+        const p = ps.next();
+        if (p.getId() === rid) inside = true;
+        else { const pp = p.getParents(); while (pp.hasNext()) if (pp.next().getId() === rid) inside = true; }
+      }
+      if (inside) { f.setTrashed(true); n++; }
+    } catch (e) {}
+  });
+  return { ok: true, trashed: n };
+}
+
+
+// ======================= ĐĂNG NHẬP (mật khẩu hoặc tài khoản Google qua Firebase) =======================
+function authOk_(b) {
+  if (b.token && b.token === SECRET) return true;
+  if (!b.idToken) return false;
+  const cache = CacheService.getScriptCache();
+  const key = 'tok:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(b.idToken))).slice(0, 40);
+  const hit = cache.get(key);
+  if (hit) return hit === '1';
+  var ok = false;
+  try {
+    const r = UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY, {
+      method: 'post', contentType: 'application/json', payload: JSON.stringify({ idToken: b.idToken }), muteHttpExceptions: true });
+    if (r.getResponseCode() === 200) {
+      const u = (JSON.parse(r.getContentText()).users || [])[0];
+      ok = !!(u && u.emailVerified !== false && ALLOWED_EMAILS.map(function (x) { return x.toLowerCase(); }).indexOf(String(u.email || '').toLowerCase()) >= 0);
+    }
+  } catch (e) {}
+  cache.put(key, ok ? '1' : '0', 600);   // nhớ 10 phút cho nhanh
+  return ok;
+}
 </script>
 
     <!-- NHÃN TRẠNG THÁI ĐỒNG BỘ -->
@@ -1557,693 +1679,11 @@ function guiNhacLich() {
     <!-- JAVASCRIPT APP LOGIC -->
     <script>
         // --- 1. MOCK DATA DÀNH CHO 5 CON THEO NĂM HỌC ---
-        // Dữ liệu mặc định = bản mới nhất lấy từ Google Sheet (cập nhật 12/11/2026).
-        // Máy mới mở file sẽ thấy ngay dữ liệu này, sau đó tự đồng bộ với Google Sheet.
+        // Không ghi dữ liệu cá nhân trong file (file được đưa lên GitHub công khai).
+        // Dữ liệu thật nằm trên Firebase, tải về ngay sau khi đăng nhập.
         const DEFAULT_STUDENTS = [
-            {
-                "id": "child_1",
-                "name": "Nguyễn Doãn Việt Anh",
-                "birthday": "2015-11-08",
-                "phone": "0987092457",
-                "hometown": "Đông Nguyên, Từ Sơn, Bắc Ninh",
-                "idNumber": "",
-                "idIssueDate": "",
-                "grade": "Lớp 6B",
-                "school": "Trường THCS Tiên Du",
-                "avatar": "https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&q=80&w=300",
-                "academicYears": {
-                    "2022-2023": {
-                        "school": "Trường Mầm Non Hoa Hồng",
-                        "grade": "Lớp Lá 1",
-                        "teacherName": "Cô Nguyễn Thu Hương",
-                        "teacherPhone": "0987654321",
-                        "evaluation": {
-                            "academic": "Giỏi",
-                            "behavior": "Tốt",
-                            "reward": "Bé Khỏe Bé Ngoan"
-                        },
-                        "timetable": [],
-                        "grades": [
-                            {
-                                "id": 1,
-                                "subject": "Nhận Biết Mẫu Giáo",
-                                "mid1": 9,
-                                "final1": 9,
-                                "mid2": 9.5,
-                                "final2": 9.5,
-                                "note": ""
-                            }
-                        ]
-                    },
-                    "2023-2024": {
-                        "school": "Trường Tiểu Học Nguyễn Du",
-                        "grade": "Lớp 1A",
-                        "teacherName": "Cô Trần Thị Mai",
-                        "teacherPhone": "0912345678",
-                        "evaluation": {
-                            "academic": "Xuất sắc",
-                            "behavior": "Tốt",
-                            "reward": "Học sinh Xuất sắc toàn diện"
-                        },
-                        "timetable": [
-                            {
-                                "id": 1,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "Chào cờ",
-                                "teacher": "",
-                                "room": "Sân trường",
-                                "note": ""
-                            },
-                            {
-                                "id": 2,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:05",
-                                "subject": "Toán",
-                                "teacher": "",
-                                "room": "1A",
-                                "note": ""
-                            },
-                            {
-                                "id": 3,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:00",
-                                "subject": "Tiếng Việt",
-                                "teacher": "",
-                                "room": "1A",
-                                "note": ""
-                            },
-                            {
-                                "id": 4,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "Mỹ Thuật",
-                                "teacher": "",
-                                "room": "Phòng MT",
-                                "note": "Mang màu"
-                            },
-                            {
-                                "id": 5,
-                                "day": "Thu 4",
-                                "session": "chieu",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "Âm Nhạc",
-                                "teacher": "",
-                                "room": "Phòng Nhạc",
-                                "note": ""
-                            },
-                            {
-                                "id": 6,
-                                "day": "Thu 5",
-                                "session": "them",
-                                "period": 1,
-                                "time": "17:30",
-                                "subject": "Tiếng Anh Giao Tiếp",
-                                "teacher": "",
-                                "room": "TT Anh Ngữ",
-                                "note": "Cô Sarah"
-                            }
-                        ],
-                        "grades": [
-                            {
-                                "id": 1,
-                                "subject": "Toán Học",
-                                "mid1": 9.5,
-                                "final1": 10,
-                                "mid2": 9,
-                                "final2": 10,
-                                "note": ""
-                            },
-                            {
-                                "id": 2,
-                                "subject": "Tiếng Việt",
-                                "mid1": 8.5,
-                                "final1": 9,
-                                "mid2": 9,
-                                "final2": 9.5,
-                                "note": ""
-                            },
-                            {
-                                "id": 3,
-                                "subject": "Tiếng Anh",
-                                "mid1": 9,
-                                "final1": 9.5,
-                                "mid2": 9.5,
-                                "final2": 10,
-                                "note": ""
-                            },
-                            {
-                                "id": 4,
-                                "subject": "Mỹ Thuật",
-                                "mid1": 10,
-                                "final1": 10,
-                                "mid2": 9.5,
-                                "final2": 10,
-                                "note": ""
-                            }
-                        ]
-                    },
-                    "2026-2027": {
-                        "school": "Trường THCS Tiên Du",
-                        "grade": "Lớp 6B",
-                        "teacherName": "Giang Thị Lý",
-                        "teacherPhone": "",
-                        "evaluation": {
-                            "academic": "Chưa xếp loại",
-                            "behavior": "Tốt",
-                            "reward": ""
-                        },
-                        "timetable": [
-                            {
-                                "id": 1,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "HĐTN, HN (Chào cờ)",
-                                "teacher": "Lý",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 2,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:15",
-                                "subject": "HĐTN, HN (Chủ đề)",
-                                "teacher": "Lý",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 3,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:10",
-                                "subject": "Toán",
-                                "teacher": "Dũng",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 4,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 4,
-                                "time": "10:05",
-                                "subject": "Tiếng Anh",
-                                "teacher": "Huyền",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 5,
-                                "day": "Thu 2",
-                                "session": "them",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "Toán (học thêm)",
-                                "teacher": "Thầy Dũng",
-                                "room": "Nhà thầy Dũng",
-                                "note": "14:00–16:00 · Ăn trưa nhà thầy Dũng"
-                            },
-                            {
-                                "id": 6,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "Ngữ văn",
-                                "teacher": "Dung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 7,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:15",
-                                "subject": "Ngữ văn",
-                                "teacher": "Dung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 8,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:10",
-                                "subject": "KHTN (Vật lí)",
-                                "teacher": "Hạnh",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 9,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 4,
-                                "time": "10:05",
-                                "subject": "Công nghệ",
-                                "teacher": "Hạnh",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 10,
-                                "day": "Thu 3",
-                                "session": "chieu",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "GDĐP",
-                                "teacher": "Q.Nhung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 11,
-                                "day": "Thu 3",
-                                "session": "chieu",
-                                "period": 2,
-                                "time": "14:55",
-                                "subject": "LS&ĐL (Sử)",
-                                "teacher": "Thành",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 12,
-                                "day": "Thu 3",
-                                "session": "chieu",
-                                "period": 3,
-                                "time": "15:50",
-                                "subject": "LS&ĐL (Địa)",
-                                "teacher": "Dung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 13,
-                                "day": "Thu 3",
-                                "session": "them",
-                                "period": 2,
-                                "time": "17:00",
-                                "subject": "Tiếng Anh (học thêm)",
-                                "teacher": "",
-                                "room": "",
-                                "note": "17:00–19:00"
-                            },
-                            {
-                                "id": 14,
-                                "day": "Thu 4",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "Nghệ thuật (Mĩ thuật)",
-                                "teacher": "Q.Nhung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 15,
-                                "day": "Thu 4",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:15",
-                                "subject": "Ngữ văn",
-                                "teacher": "Dung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 16,
-                                "day": "Thu 4",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:10",
-                                "subject": "Toán",
-                                "teacher": "Dũng",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 17,
-                                "day": "Thu 4",
-                                "session": "sang",
-                                "period": 4,
-                                "time": "10:05",
-                                "subject": "Tiếng Anh",
-                                "teacher": "Huyền",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 18,
-                                "day": "Thu 4",
-                                "session": "chieu",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "KHTN (Vật lí)",
-                                "teacher": "Hạnh",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 19,
-                                "day": "Thu 4",
-                                "session": "chieu",
-                                "period": 2,
-                                "time": "14:55",
-                                "subject": "Nghệ thuật (Âm nhạc)",
-                                "teacher": "Thu",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 20,
-                                "day": "Thu 4",
-                                "session": "chieu",
-                                "period": 3,
-                                "time": "15:50",
-                                "subject": "GDCD",
-                                "teacher": "Lanh",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 21,
-                                "day": "Thu 4",
-                                "session": "them",
-                                "period": 2,
-                                "time": "17:00",
-                                "subject": "Tiếng Anh (học thêm)",
-                                "teacher": "",
-                                "room": "",
-                                "note": "17:00–19:00"
-                            },
-                            {
-                                "id": 22,
-                                "day": "Thu 5",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "LS&ĐL (Sử)",
-                                "teacher": "Thành",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 23,
-                                "day": "Thu 5",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:15",
-                                "subject": "Toán",
-                                "teacher": "Dũng",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 24,
-                                "day": "Thu 5",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:10",
-                                "subject": "GDTC",
-                                "teacher": "Mai",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 25,
-                                "day": "Thu 5",
-                                "session": "sang",
-                                "period": 4,
-                                "time": "10:05",
-                                "subject": "GDTC",
-                                "teacher": "Mai",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 26,
-                                "day": "Thu 5",
-                                "session": "them",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "Ngữ văn (học thêm)",
-                                "teacher": "",
-                                "room": "Nhà thầy Dũng",
-                                "note": "14:00–17:10 · Ăn trưa nhà thầy Dũng"
-                            },
-                            {
-                                "id": 27,
-                                "day": "Thu 6",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:15",
-                                "subject": "Tiếng Anh",
-                                "teacher": "Huyền",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 28,
-                                "day": "Thu 6",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:15",
-                                "subject": "Tin học",
-                                "teacher": "Linh",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 29,
-                                "day": "Thu 6",
-                                "session": "sang",
-                                "period": 3,
-                                "time": "09:10",
-                                "subject": "KHTN (Hóa)",
-                                "teacher": "Lâm",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 30,
-                                "day": "Thu 6",
-                                "session": "sang",
-                                "period": 4,
-                                "time": "10:05",
-                                "subject": "Ngữ văn",
-                                "teacher": "Dung",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 31,
-                                "day": "Thu 6",
-                                "session": "chieu",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "Toán",
-                                "teacher": "Dũng",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 32,
-                                "day": "Thu 6",
-                                "session": "chieu",
-                                "period": 2,
-                                "time": "14:55",
-                                "subject": "KHTN (Sinh)",
-                                "teacher": "Lý",
-                                "room": "",
-                                "note": ""
-                            },
-                            {
-                                "id": 33,
-                                "day": "Thu 6",
-                                "session": "chieu",
-                                "period": 3,
-                                "time": "15:50",
-                                "subject": "HĐTN, HN (Sinh hoạt lớp)",
-                                "teacher": "Lý",
-                                "room": "",
-                                "note": ""
-                            }
-                        ],
-                        "grades": []
-                    }
-                },
-                "achievements": [
-                    {
-                        "id": 1,
-                        "title": "Học Sinh Xuất Sắc Học Kỳ 1",
-                        "year": "2023-2024",
-                        "level": "Trường",
-                        "desc": "Đạt danh hiệu học sinh giỏi toàn diện."
-                    },
-                    {
-                        "id": 2,
-                        "title": "Giải Nhất Vẽ Tranh Mùa Xuân",
-                        "year": "2023-2024",
-                        "level": "Quận/Huyện",
-                        "desc": "Tác phẩm: Mùa xuân trên quê hương bé."
-                    }
-                ],
-                "media": [],
-                "plans": []
-            },
-            {
-                "id": "child_2",
-                "name": "Nguyễn Ngọc Anh Thư",
-                "birthday": "2021-07-09",
-                "phone": "",
-                "hometown": "thôn Ân Phú, phường Tiên Du, thành phố Bắc Ninh",
-                "idNumber": "",
-                "idIssueDate": "",
-                "grade": "Lớp 5 tuổi",
-                "school": "Trường mầm non Ngôi Sao",
-                "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=300",
-                "academicYears": {
-                    "2023-2024": {
-                        "school": "Trường Tiểu Học Nguyễn Du",
-                        "grade": "Lớp 3B",
-                        "teacherName": "Cô Lê Thanh Hà",
-                        "teacherPhone": "0933445566",
-                        "evaluation": {
-                            "academic": "Xuất sắc",
-                            "behavior": "Tốt",
-                            "reward": "Học sinh Hoàn thành xuất sắc nhiệm vụ học tập"
-                        },
-                        "timetable": [
-                            {
-                                "id": 1,
-                                "day": "Thu 2",
-                                "session": "sang",
-                                "period": 1,
-                                "time": "07:30",
-                                "subject": "Toán",
-                                "teacher": "",
-                                "room": "3B",
-                                "note": ""
-                            },
-                            {
-                                "id": 2,
-                                "day": "Thu 3",
-                                "session": "sang",
-                                "period": 2,
-                                "time": "08:30",
-                                "subject": "Tin Học",
-                                "teacher": "",
-                                "room": "Lab 1",
-                                "note": ""
-                            },
-                            {
-                                "id": 3,
-                                "day": "Thu 4",
-                                "session": "chieu",
-                                "period": 1,
-                                "time": "14:00",
-                                "subject": "Tiếng Anh",
-                                "teacher": "",
-                                "room": "3B",
-                                "note": ""
-                            },
-                            {
-                                "id": 4,
-                                "day": "Thu 6",
-                                "session": "them",
-                                "period": 1,
-                                "time": "17:00",
-                                "subject": "Luyện Chữ Đẹp",
-                                "teacher": "",
-                                "room": "Nhà cô Hà",
-                                "note": "Bút máy"
-                            }
-                        ],
-                        "grades": [
-                            {
-                                "id": 1,
-                                "subject": "Toán Học",
-                                "mid1": 9,
-                                "final1": 9.5,
-                                "mid2": 9,
-                                "final2": 9.5,
-                                "note": ""
-                            },
-                            {
-                                "id": 2,
-                                "subject": "Tiếng Việt",
-                                "mid1": 9.5,
-                                "final1": 9,
-                                "mid2": 9.5,
-                                "final2": 9.5,
-                                "note": ""
-                            },
-                            {
-                                "id": 3,
-                                "subject": "Tin Học",
-                                "mid1": 10,
-                                "final1": 10,
-                                "mid2": 10,
-                                "final2": 10,
-                                "note": ""
-                            }
-                        ]
-                    },
-                    "2026-2027": {
-                        "school": "Trường mầm non Ngôi Sao",
-                        "grade": "Lớp 5 tuổi",
-                        "teacherName": "",
-                        "teacherPhone": "",
-                        "evaluation": {
-                            "academic": "Chưa xếp loại",
-                            "behavior": "Tốt",
-                            "reward": ""
-                        },
-                        "timetable": [],
-                        "grades": []
-                    }
-                },
-                "achievements": [
-                    {
-                        "id": 1,
-                        "title": "Giải Vở Sạch Chữ Đẹp",
-                        "year": "2023-2024",
-                        "level": "Trường",
-                        "desc": "Giải Nhì cấp trường hội thi Viết chữ đẹp."
-                    }
-                ],
-                "media": [
-                    {
-                        "id": 1,
-                        "type": "image",
-                        "title": "Thi Viết Chữ Đẹp",
-                        "url": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600",
-                        "urls": [
-                            "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600"
-                        ],
-                        "date": "2023-10-15"
-                    }
-                ],
-                "plans": []
-            }
+            { id: 'child_1', name: 'Bé', birthday: '', phone: '', hometown: '', idNumber: '', idIssueDate: '', grade: '', school: '', avatar: '',
+              academicYears: {}, achievements: [], media: [], plans: [] }
         ];
 
         const DAYS_KEYS = ['Thu 2', 'Thu 3', 'Thu 4', 'Thu 5', 'Thu 6', 'Thu 7', 'CN'];
@@ -2343,6 +1783,7 @@ function guiNhacLich() {
         // Init App
         window.onload = function() {
             loadSyncCfg();
+            if (FB_MODE && !syncCfg.url) syncCfg.url = BUILTIN_SYNC.url;
             loadData();
             migrateData();
             loadUiState();
@@ -2351,7 +1792,7 @@ function guiNhacLich() {
             renderCurrentStudentData();
             applyViewMode();
             updateSyncUi();
-            setTimeout(initialSync, 300);
+            if (FB_MODE) fbInit(); else { setTimeout(initialSync, 300); if (FIREBASE_CONFIG && location.protocol === 'file:') showFileModeNotice(); }
         };
 
         // Mốc của bộ dữ liệu mặc định ghi trong file. Khi mình cập nhật lại dữ liệu mặc định thì đổi mốc này:
@@ -2362,8 +1803,8 @@ function guiNhacLich() {
         function loadData() {
             let saved = null, epoch = null;
             try { saved = localStorage.getItem('family_students_data_v2'); epoch = localStorage.getItem('family_data_epoch'); } catch (e) {}
-            if (saved && epoch === DATA_EPOCH) {
-                try { studentsData = JSON.parse(saved); return; } catch (e) {}
+            if (saved && (epoch === DATA_EPOCH || FB_MODE)) {
+                try { studentsData = JSON.parse(saved); if (Array.isArray(studentsData) && studentsData.length) { fbHadCache = FB_MODE; return; } } catch (e) {}
             }
             // Lần đầu mở bản file này: dùng dữ liệu trong file (dữ liệu cũ trên máy được cất vào bản sao lưu)
             if (saved) { try { localStorage.setItem('family_students_data_backup', saved); } catch (e) {} }
@@ -3186,11 +2627,7 @@ function guiNhacLich() {
                 grid.innerHTML += `
                     <div class="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm group hover:shadow-md transition flex flex-col">
                         <div class="relative h-32 sm:h-44 bg-slate-900 cursor-pointer overflow-hidden" onclick="openAlbum(${item.id}, 0)">
-                            ${
-                                item.type === 'video'
-                                ? `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`
-                                : `<img src="${esc(mediaUrls(item)[0] || '')}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">`
-                            }
+                            ${mediaCoverHtml(item)}
                             ${mediaUrls(item).length > 1 ? `<span class="absolute bottom-2 left-2 bg-slate-900/70 text-white text-[12px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-images mr-1"></i>${mediaUrls(item).length}</span>` : ''}
                             <button onclick="event.stopPropagation(); openMediaModal(${item.id})" class="absolute top-2 right-12 sm:right-10 bg-slate-900/60 hover:bg-indigo-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="event.stopPropagation(); deleteMediaItem(${item.id})" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-rose-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition">
@@ -3211,7 +2648,7 @@ function guiNhacLich() {
             document.getElementById('mediaForm').reset();
             document.getElementById('mediaEditId').value = id || '';
             document.querySelector('#mediaModal h3').textContent = id ? 'Sửa Khoảnh Khắc' : 'Thêm Khoảnh Khắc (nhiều ảnh)';
-            mediaDraft = [];
+            mediaDraft = []; mediaNewUploads = []; mediaUploading = 0; setMediaUploadStatus('');
             if (id) {
                 const m = (getCurrentStudent().media || []).find(x => x.id === id);
                 if (m) {
@@ -3251,37 +2688,61 @@ function guiNhacLich() {
                 r.readAsDataURL(file);
             });
         }
+        let mediaUploading = 0, mediaNewUploads = [];
+        function setMediaUploadStatus(msg, cls) {
+            const el = document.getElementById('mediaUploadStatus');
+            if (el) { el.className = 'text-[12px] font-bold mt-2 ' + (cls || 'text-slate-500'); el.innerHTML = msg || ''; }
+            const btn = document.querySelector('#mediaForm button[type=submit]');
+            if (btn) { btn.disabled = mediaUploading > 0; btn.classList.toggle('opacity-50', mediaUploading > 0); }
+        }
         async function handleMediaUpload(e) {
             const files = [...(e.target.files || [])];
-            if (!files.length) return;
-            const box = document.getElementById('mediaPreview');
-            box.insertAdjacentHTML('beforeend', `<div id="mediaLoading" class="col-span-4 text-[12px] text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý ${files.length} tệp...</div>`);
-            for (const f of files) {
-                if (f.type.startsWith('video/')) {
-                    if (f.size > 8 * 1024 * 1024) { alert(`Video "${f.name}" quá lớn để lưu trong app. Hãy tải lên YouTube / Google Drive rồi dán link.`); continue; }
-                    mediaDraft.push(await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(f); }));
-                    document.getElementById('mediaType').value = 'video';
-                } else {
-                    mediaDraft.push(await compressImage(f));
-                }
-            }
             e.target.value = '';
-            renderMediaDraft();
+            if (!files.length) return;
+            await ensureServerVersion();
+            const drive = canUseDrive();
+            const kid = getCurrentStudent().name;
+            const errs = [];
+            mediaUploading += files.length;
+            let done = 0;
+            for (const f of files) {
+                const isVid = f.type.startsWith('video/');
+                setMediaUploadStatus(`<i class="fa-solid fa-spinner fa-spin mr-1"></i>${drive ? 'Đang tải lên Google Drive' : 'Đang xử lý'} ${done + 1}/${files.length}: ${esc(f.name)}${isVid ? ' (video, có thể mất 1–2 phút)' : ''}`, 'text-indigo-600');
+                try {
+                    if (drive) {
+                        if (isVid && f.size > 30 * 1024 * 1024) throw new Error(`"${f.name}" lớn hơn 30MB, hãy tải thẳng lên Google Drive / YouTube rồi dán link`);
+                        const dataUrl = (!isVid && f.size > 20 * 1024 * 1024) ? await compressImage(f, 3200, 0.9) : await fileToDataUrl(f);
+                        const url = await uploadDataUrl(dataUrl, f.name, kid);
+                        mediaDraft.push(url); mediaNewUploads.push(url);
+                    } else {
+                        if (isVid) {
+                            if (f.size > 3 * 1024 * 1024) throw new Error(`"${f.name}": chưa kết nối Google Drive nên chỉ lưu được video dưới 3MB`);
+                            mediaDraft.push(await fileToDataUrl(f));
+                        } else mediaDraft.push(await compressImage(f));
+                    }
+                    if (isVid) document.getElementById('mediaType').value = 'video';
+                } catch (err) { errs.push(err.message || String(err)); }
+                done++; mediaUploading--;
+                renderMediaDraft();
+            }
+            setMediaUploadStatus(errs.length ? '✗ ' + errs.map(esc).join('<br>✗ ') : (drive ? `<i class="fa-brands fa-google-drive mr-1"></i>Đã tải ${files.length} file lên Google Drive` : '⚠ Chưa kết nối Google Drive: ảnh đang lưu tạm trong trình duyệt (giới hạn ~5MB).'),
+                                 errs.length ? 'text-rose-600' : (drive ? 'text-emerald-600' : 'text-amber-600'));
         }
+
         function renderMediaDraft() {
             const box = document.getElementById('mediaPreview');
             if (!box) return;
             box.innerHTML = mediaDraft.map((u, i) => `
                 <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border ${i === 0 ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'}">
-                    ${/^data:video|\.(mp4|webm|mov)(\?|$)|youtube|youtu\.be|drive\.google/i.test(u)
+                    ${isVideoUrl(u) && !driveId(u)
                         ? `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xl cursor-pointer" onclick="setMediaCover(${i})"><i class="fa-solid fa-circle-play"></i></div>`
-                        : `<img src="${esc(u)}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.src='https://placehold.co/200x200?text=Link'">`}
+                        : `<img src="${esc(thumbUrl(u, 300))}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.src='https://placehold.co/200x200?text=Link'">${isVideoUrl(u) ? '<span class="absolute inset-0 flex items-center justify-center text-white text-xl pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>' : ''}`}
                     ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-indigo-600/90 text-white text-[10px] font-bold text-center py-0.5">Ảnh bìa</span>' : ''}
                     <button type="button" onclick="removeMediaDraft(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 text-white text-[11px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
                 </div>`).join('') + (mediaDraft.length ? `<div class="col-span-4 text-[12px] text-slate-500">${mediaDraft.length} ảnh/video trong khoảnh khắc này</div>` : '');
         }
         function setMediaCover(i) { mediaDraft.unshift(mediaDraft.splice(i, 1)[0]); renderMediaDraft(); }
-        function removeMediaDraft(i) { mediaDraft.splice(i, 1); renderMediaDraft(); }
+        function removeMediaDraft(i) { if (mediaUploading > 0) return; mediaDraft.splice(i, 1); renderMediaDraft(); }
         function mediaUrls(m) { return (m.urls && m.urls.length) ? m.urls : (m.url ? [m.url] : []); }
 
         function saveMediaItem(e) {
@@ -3293,14 +2754,17 @@ function guiNhacLich() {
             if (!urls.length) { alert('Hãy chọn ít nhất 1 ảnh hoặc dán 1 link.'); return; }
             const item = { type: document.getElementById('mediaType').value, title: document.getElementById('mediaTitle').value.trim(),
                            date: document.getElementById('mediaDate').value, urls, url: urls[0] };
+            if (mediaUploading > 0) { alert('Đang tải ảnh lên, chờ xong rồi bấm lưu nhé.'); return; }
             const before = student.media.slice();
             const editId = Number(document.getElementById('mediaEditId').value) || null;
             const idx = editId ? student.media.findIndex(m => m.id === editId) : -1;
+            const oldUrls = idx !== -1 ? mediaUrls(student.media[idx]) : [];
             if (idx !== -1) student.media[idx] = { ...student.media[idx], ...item };
             else student.media.push({ id: Date.now(), ...item });
             try { saveData(); }
             catch (err) { alert('Bộ nhớ trình duyệt đã đầy, không lưu thêm ảnh được. Hãy bớt ảnh hoặc dán link Google Photos / Drive thay cho ảnh tải lên.'); student.media = before; return; }
-            mediaDraft = [];
+            trashDriveFiles([...oldUrls, ...mediaNewUploads].filter(u => !urls.includes(u)));   // ảnh đã bỏ -> Thùng rác Drive
+            mediaDraft = []; mediaNewUploads = [];
             renderGallery();
             renderCurrentStudentData();
             closeModal('mediaModal');
@@ -3308,10 +2772,87 @@ function guiNhacLich() {
 
         function deleteMediaItem(id) {
             const student = getCurrentStudent();
-            student.media = student.media.filter(m => m.id !== id);
+            const m = student.media.find(x => x.id === id);
+            if (!m || !confirm(`Xóa khoảnh khắc "${m.title || ''}" (${mediaUrls(m).length} ảnh/video)?` + (mediaUrls(m).some(driveId) ? '\nFile trên Google Drive sẽ được chuyển vào Thùng rác (khôi phục được trong 30 ngày).' : ''))) return;
+            student.media = student.media.filter(x => x.id !== id);
+            trashDriveFiles(mediaUrls(m));
             saveData();
             renderGallery();
             renderCurrentStudentData();
+        }
+
+        // ===== ẢNH & VIDEO TRÊN GOOGLE DRIVE =====
+        function driveId(u) {
+            const m = String(u || '').match(/lh3\.googleusercontent\.com\/d\/([\w-]+)|drive\.google\.com\/file\/d\/([\w-]+)|drive\.google\.com\/(?:thumbnail|uc|open)\?(?:[^#]*&)?id=([\w-]+)/);
+            return m ? (m[1] || m[2] || m[3]) : null;
+        }
+        function isDriveVideo(u) { return /drive\.google\.com\/file\/d\/[\w-]+\/preview/.test(String(u || '')); }
+        function isVideoUrl(u) { return isDriveVideo(u) || /^data:video|\.(mp4|webm|mov)(\?|$)|youtube\.com|youtu\.be/i.test(String(u || '')); }
+        function thumbUrl(u, w = 600) {
+            const id = driveId(u);
+            if (id) return isDriveVideo(u) ? `https://drive.google.com/thumbnail?id=${id}&sz=w${w}` : `https://lh3.googleusercontent.com/d/${id}=w${w}`;
+            return u;
+        }
+        function fullUrl(u) { const id = driveId(u); return id && !isDriveVideo(u) ? `https://lh3.googleusercontent.com/d/${id}=w2400` : u; }
+        function mediaCoverHtml(item) {
+            const u = mediaUrls(item)[0] || '';
+            const vid = isVideoUrl(u) || item.type === 'video';
+            if (vid && !driveId(u)) return `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`;
+            return `<img src="${esc(thumbUrl(u, 800))}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">` +
+                   (vid ? `<span class="absolute inset-0 flex items-center justify-center text-white text-4xl drop-shadow pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>` : '');
+        }
+        async function ensureServerVersion() {
+            if (!syncServerVersion && syncConfigured()) {
+                try { const p = await syncRequest({ action: 'ping', token: syncCfg.token }); syncServerVersion = p.version || 1; if (p.driveFolderUrl) { syncCfg.driveFolderUrl = p.driveFolderUrl; saveSyncCfg(); } } catch (e) {}
+            }
+            return syncServerVersion;
+        }
+        function canUseDrive() { return syncConfigured() && syncServerVersion >= 6; }
+        function fileToDataUrl(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.onerror = rej; r.readAsDataURL(f); }); }
+        async function uploadDataUrl(dataUrl, name, kidName) {
+            const m = String(dataUrl).match(/^data:([^;,]+)?(;base64)?,(.*)$/);
+            if (!m) throw new Error('Dữ liệu ảnh không hợp lệ');
+            const mime = m[1] || 'application/octet-stream';
+            const data = m[2] ? m[3] : btoa(unescape(encodeURIComponent(decodeURIComponent(m[3]))));
+            const j = await syncRequest({ action: 'upload', token: syncCfg.token, name, mime, kid: kidName, data }, 300000);
+            if (j.folderUrl && syncCfg.driveFolderUrl !== j.folderUrl) { syncCfg.driveFolderUrl = j.folderUrl; saveSyncCfg(); }
+            return j.url;
+        }
+        function trashDriveFiles(urls) {
+            const ids = [...new Set((urls || []).map(driveId).filter(Boolean))];
+            if (!ids.length || !canUseDrive()) return;
+            syncRequest({ action: 'trash', token: syncCfg.token, ids }).catch(() => {});
+        }
+
+        // Chuyển ảnh/video đang lưu trong máy + Sheet sang Google Drive (chạy tự động, 1 lần)
+        let migratingImgs = false;
+        async function migrateImagesToDrive() {
+            if (migratingImgs || !syncConfigured()) return;
+            await ensureServerVersion();
+            if (!canUseDrive()) return;
+            const found = new Map();   // dataUrl -> {kid, n}
+            studentsData.forEach(st => {
+                if (typeof st.avatar === 'string' && st.avatar.startsWith('data:')) found.set(st.avatar, { kid: st.name, name: 'anh-dai-dien' });
+                (st.media || []).forEach(m => mediaUrls(m).forEach((u, k) => { if (typeof u === 'string' && u.startsWith('data:') && !found.has(u)) found.set(u, { kid: st.name, name: (m.title || 'ky-niem') + '-' + (k + 1) }); }));
+            });
+            if (!found.size) return;
+            migratingImgs = true;
+            const map = new Map(); let n = 0, fail = 0;
+            for (const [u, info] of found) {
+                n++;
+                setSyncState('busy', `Đang chuyển ảnh/video sang Google Drive ${n}/${found.size}...`);
+                const ext = (u.match(/^data:(?:image|video)\/(\w+)/) || [, 'jpg'])[1].replace('jpeg', 'jpg');
+                try { map.set(u, await uploadDataUrl(u, `${info.name}.${ext}`, info.kid)); } catch (e) { fail++; }
+            }
+            const sw = u => map.get(u) || u;
+            studentsData.forEach(st => {
+                st.avatar = sw(st.avatar);
+                (st.media || []).forEach(m => { m.urls = mediaUrls(m).map(sw); m.url = m.urls[0] || ''; });
+            });
+            migratingImgs = false;
+            saveData();
+            renderKidTabs(); if (isOverview) renderOverview(); else renderCurrentStudentData();
+            showToast('Đã chuyển ảnh sang Google Drive', `${map.size} ảnh/video` + (fail ? ` · ${fail} file lỗi, sẽ thử lại lần sau` : ''));
         }
 
         let album = { urls: [], i: 0, type: 'image', title: '' };
@@ -3325,28 +2866,17 @@ function guiNhacLich() {
         function albumStep(d) { if (album.urls.length < 2) return; album.i = (album.i + d + album.urls.length) % album.urls.length; showAlbum(); }
         function showAlbum() {
             const u = album.urls[album.i] || '';
-            const isVid = album.type === 'video' || /^data:video|\.(mp4|webm|mov)(\?|$)/i.test(u);
             const yt = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/);
-            document.getElementById('lightboxContent').innerHTML = yt
-                ? `<iframe src="https://www.youtube.com/embed/${yt[1]}" class="w-full aspect-video" allowfullscreen></iframe>`
-                : isVid ? `<video src="${esc(u)}" controls autoplay class="max-h-[75vh] max-w-full rounded-xl"></video>`
-                : `<img src="${esc(u)}" class="max-h-[75vh] max-w-full object-contain rounded-xl">`;
+            const box = document.getElementById('lightboxContent');
+            if (isDriveVideo(u)) box.innerHTML = `<iframe src="${esc(u)}" class="w-full aspect-video max-h-[75vh]" allow="autoplay" allowfullscreen></iframe>`;
+            else if (yt) box.innerHTML = `<iframe src="https://www.youtube.com/embed/${yt[1]}" class="w-full aspect-video" allowfullscreen></iframe>`;
+            else if (isVideoUrl(u)) box.innerHTML = `<video src="${esc(u)}" controls autoplay class="max-h-[75vh] max-w-full rounded-xl"></video>`;
+            else box.innerHTML = `<img src="${esc(fullUrl(u))}" class="max-h-[75vh] max-w-full object-contain rounded-xl">`;
             const n = album.urls.length;
             document.getElementById('lightboxCaption').textContent = album.title + (n > 1 ? `  ·  ${album.i + 1}/${n}` : '');
             document.getElementById('lbPrev').style.display = document.getElementById('lbNext').style.display = n > 1 ? '' : 'none';
-            document.getElementById('lbThumbs').innerHTML = n > 1 ? album.urls.map((x, k) => `<img src="${esc(x)}" onclick="event.stopPropagation(); album.i=${k}; showAlbum()" class="w-14 h-14 flex-shrink-0 object-cover rounded-lg cursor-pointer border-2 ${k === album.i ? 'border-white' : 'border-transparent opacity-60'}" onerror="this.src='https://placehold.co/80x80?text=%E2%96%B6'">`).join('') : '';
+            document.getElementById('lbThumbs').innerHTML = n > 1 ? album.urls.map((x, k) => `<img src="${esc(thumbUrl(x, 160))}" onclick="event.stopPropagation(); album.i=${k}; showAlbum()" class="w-14 h-14 flex-shrink-0 object-cover rounded-lg cursor-pointer border-2 ${k === album.i ? 'border-white' : 'border-transparent opacity-60'}" onerror="this.src='https://placehold.co/80x80?text=%E2%96%B6'">`).join('') : '';
         }
-        document.addEventListener('keydown', e => {
-            if (document.getElementById('lightboxModal').classList.contains('hidden')) return;
-            if (e.key === 'ArrowLeft') albumStep(-1);
-            if (e.key === 'ArrowRight') albumStep(1);
-            if (e.key === 'Escape') closeModal('lightboxModal');
-        });
-        (() => {   // vuốt trái/phải trên điện thoại
-            let x0 = null;
-            document.addEventListener('touchstart', e => { if (!document.getElementById('lightboxModal').classList.contains('hidden')) x0 = e.touches[0].clientX; }, { passive: true });
-            document.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) albumStep(dx < 0 ? 1 : -1); }, { passive: true });
-        })();
 
         function openLightbox(url, type, caption) {
             const modal = document.getElementById('lightboxModal');
@@ -3385,7 +2915,15 @@ function guiNhacLich() {
         async function handleImageUpload(e, targetId) {
             const file = e.target.files[0];
             if (!file) return;
-            document.getElementById(targetId).value = await compressImage(file, 600, 0.85);
+            const inp = document.getElementById(targetId);
+            const small = await compressImage(file, 800, 0.88);
+            await ensureServerVersion();
+            if (canUseDrive()) {
+                inp.value = ''; inp.placeholder = 'Đang tải ảnh lên Google Drive...';
+                try { inp.value = await uploadDataUrl(small, 'anh-dai-dien.jpg', document.getElementById('editName').value || getCurrentStudent().name); }
+                catch (err) { inp.value = small; alert('Chưa tải được lên Google Drive, ảnh tạm lưu trong trình duyệt: ' + err.message); }
+                inp.placeholder = 'https://...';
+            } else inp.value = small;
         }
 
         function saveStudentInfo(e) {
@@ -3757,7 +3295,7 @@ function guiNhacLich() {
         // Kết nối Google Sheet ghi sẵn trong file (máy nào mở file cũng tự kết nối, không cần nhập lại)
         const BUILTIN_SYNC = {
             url: 'https://script.google.com/macros/s/AKfycbziQHlV7HOGEMwDgP-KIxODtoBoVywn2j1SHqrTFiTZiLUne8KtIe2EzJ3vd_2606Wk/exec',
-            token: 'vinh123',
+            token: '',   // không ghi mật khẩu trong file công khai; bản online dùng đăng nhập Google
             oldUrls: ['https://script.google.com/macros/s/AKfycbxEzzXA5QUm53NQ3Qh_hUaQqNAFC4BMYNc4ij3cz8MGXkzZT_V2Xn6rT57rGCibJv6r/exec']   // URL cũ: trình duyệt nào còn lưu sẽ tự chuyển sang URL mới
         };
         let syncCfg = { url: '', token: '', auto: true };
@@ -3781,7 +3319,7 @@ function guiNhacLich() {
         }
         function saveSyncCfg() { try { localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg)); } catch (e) {} }
         function saveSyncMeta() { try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(syncMeta)); } catch (e) {} }
-        function syncConfigured() { return !!(syncCfg.url && syncCfg.token); }
+        function syncConfigured() { return FB_MODE ? !!(syncCfg.url && (fbUser || syncCfg.token)) : !!(syncCfg.url && syncCfg.token); }
 
         const SYNC_STYLE = {
             off:   { dot: 'bg-slate-300',               icon: 'fa-cloud',             box: 'bg-slate-50 border-slate-200 text-slate-600' },
@@ -3805,6 +3343,7 @@ function guiNhacLich() {
         function markLocalChange() {
             syncMeta.localTs = Date.now();
             saveSyncMeta();
+            if (FB_MODE) { if (!fbApplying) fbSchedulePush(); return; }
             if (syncReady && syncConfigured() && syncCfg.auto) {
                 setSyncState('dirty', 'Có thay đổi, đang chuẩn bị lưu lên Google Sheet...');
                 clearTimeout(syncTimer);
@@ -3812,9 +3351,14 @@ function guiNhacLich() {
             }
         }
 
-        async function syncRequest(payload) {
+        async function syncRequest(payload, timeoutMs) {
+            if (FB_MODE && typeof payload === 'object') {
+                payload = { ...payload };
+                if (fbUser) { try { payload.idToken = await fbUser.getIdToken(); } catch (e) {} }
+                if (syncCfg.token) payload.token = syncCfg.token;
+            }
             const ctl = new AbortController();
-            const to = setTimeout(() => ctl.abort(), 60000);
+            const to = setTimeout(() => ctl.abort(), timeoutMs || 60000);
             try {
                 const res = await fetch(syncCfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: typeof payload === 'string' ? payload : JSON.stringify(payload), signal: ctl.signal });
                 const txt = await res.text();
@@ -3860,6 +3404,7 @@ function guiNhacLich() {
         }
 
         async function syncPush(force) {
+            if (FB_MODE) return fbPushNow();
             if (!syncConfigured() || syncBusy) return false;
             clearTimeout(syncTimer);
             syncBusy = true;
@@ -3927,6 +3472,7 @@ function guiNhacLich() {
         }
 
         async function initialSync() {
+            if (FB_MODE) return;
             if (!syncConfigured()) { syncReady = true; setSyncState('off'); return; }
             setSyncState('busy', 'Đang kiểm tra Google Sheet...');
             try {
@@ -3945,11 +3491,13 @@ function guiNhacLich() {
                     } else { await syncPush(true); }
                 } else if (localChanged) { await syncPush(); }
                 else setSyncState('ok', 'Đã đồng bộ với Google Sheet');
-            } catch (e) { syncReady = true; setSyncState('err', 'Không kết nối được: ' + e.message); }
+            } catch (e) { syncReady = true; setSyncState('err', 'Không kết nối được: ' + e.message); return; }
+            setTimeout(migrateImagesToDrive, 800);
         }
 
         // Máy khác vừa lưu? kiểm tra nhẹ khi quay lại trang
         async function syncCheckRemote() {
+            if (FB_MODE) return;
             if (!syncReady || !syncConfigured() || syncBusy || syncMeta.localTs > syncMeta.syncedLocalTs) return;
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -3962,7 +3510,7 @@ function guiNhacLich() {
         document.addEventListener('visibilitychange', () => { if (!document.hidden) syncCheckRemote(); });
         setInterval(syncCheckRemote, 120000);
 
-        function syncPending() { return syncConfigured() && (syncBusy || syncMeta.localTs > syncMeta.syncedLocalTs); }
+        function syncPending() { return FB_MODE ? !!fbTimer : (syncConfigured() && (syncBusy || syncMeta.localTs > syncMeta.syncedLocalTs)); }
         window.addEventListener('beforeunload', e => {
             if (!syncPending()) return;
             if (!syncBusy) syncPush();          // còn thay đổi chưa gửi: gửi ngay
@@ -4001,6 +3549,10 @@ function guiNhacLich() {
             document.getElementById('syncToken').value = syncCfg.token || '';
             document.getElementById('syncAuto').checked = syncCfg.auto !== false;
             document.getElementById('syncGuide').open = !syncConfigured();
+            const ub = document.getElementById('fbUserBox');
+            if (FB_MODE) { ub.classList.remove('hidden'); ub.innerHTML = `<i class="fa-solid fa-fire text-amber-500 mr-1"></i>Dữ liệu lưu trên <b>Firebase</b> (tự đồng bộ tức thì)${fbUser ? ` · ${esc(fbUser.email)} · <button onclick="fbLogout()" class="underline text-rose-600">Đăng xuất</button>` : ''}<br><span class="font-normal text-indigo-700">Google Sheet bên dưới chỉ dùng để: lưu ảnh/video lên Drive, bản sao để xem/in và email nhắc lịch.</span>`; } else ub.classList.add('hidden');
+            const dl = document.getElementById('driveFolderLink');
+            if (syncCfg.driveFolderUrl) { dl.href = syncCfg.driveFolderUrl; dl.classList.remove('hidden'); dl.classList.add('block'); } else dl.classList.add('hidden');
             updateSyncUi();
             document.getElementById('syncModal').classList.remove('hidden');
         }
@@ -4047,18 +3599,20 @@ function guiNhacLich() {
             const out = [];
             const show = () => { box.textContent = out.join('\n'); };
             out.push('Trình duyệt: ' + (navigator.onLine ? 'đang có mạng' : 'KHÔNG có mạng') + ' · trang mở từ: ' + location.protocol); show();
+            if (FB_MODE) out.push('Chế độ Firebase · ' + (fbUser ? fbUser.email : 'chưa đăng nhập'));
             if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(syncCfg.url)) {
                 out.push('✗ URL chưa đúng dạng https://script.google.com/macros/s/…/exec (đang là: ' + (syncCfg.url || 'trống') + ')'); show(); return;
             }
             out.push('✓ URL đúng dạng'); show();
-            if (!syncCfg.token) { out.push('✗ Chưa nhập mật khẩu'); show(); return; }
+            if (!syncCfg.token && !(FB_MODE && fbUser)) { out.push('✗ Chưa nhập mật khẩu'); show(); return; }
             let ping;
             try { ping = await syncRequest({ action: 'ping', token: syncCfg.token }); }
             catch (e) { out.push('✗ Gọi thử thất bại: ' + e.message); show(); return; }
             syncServerVersion = ping.version || 1;
             out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
-            if ((ping.version || 0) < 5) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
-            else out.push('✓ Mã Apps Script là bản mới nhất (v5)');
+            if (ping.driveFolderUrl) { syncCfg.driveFolderUrl = ping.driveFolderUrl; saveSyncCfg(); }
+            if ((ping.version || 0) < 7) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v7: Drive + đăng nhập Google)');
             show();
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -4341,10 +3895,207 @@ function guiNhacLich() {
             saveData();
         }
 
+        // =====================================================
+        // FIREBASE: đăng nhập Google + Firestore (đồng bộ tức thì, mở là có dữ liệu)
+        // =====================================================
+        const FIREBASE_CONFIG = {
+            apiKey: 'AIzaSyCszH-Yg-FZfRGUDM2p_f85CFeia6Z8S0o',
+            authDomain: 'so-hoc-tap-gia-dinh.firebaseapp.com',
+            projectId: 'so-hoc-tap-gia-dinh',
+            storageBucket: 'so-hoc-tap-gia-dinh.firebasestorage.app',
+            messagingSenderId: '179947364304',
+            appId: '1:179947364304:web:b56dc2a8f8c1662dc1a3d5'
+        };
+        const FAMILY_ID = 'gia-dinh';
+        const ALLOWED_EMAILS = ['thicckhq@gmail.com'];          // thêm người nhà ở đây VÀ trong Firestore Rules + Code.gs
+        const ONLINE_URL = 'https://more-study.github.io/StudyNotebook/';
+        const FB_MODE = !!FIREBASE_CONFIG && /^https?:$/.test(location.protocol) && typeof firebase !== 'undefined';
+
+        let fbDb = null, fbAuth = null, fbUser = null, fbUnsub = null, fbTimer = null, fbBackupTimer = null;
+        let fbLast = {}, fbOrder = {}, fbApplying = false, fbFirstSnap = true, fbHadCache = false, fbMigrating = false;
+        const kidsCol = () => fbDb.collection('families').doc(FAMILY_ID).collection('kids');
+
+        function showFbOverlay(kind, msg) {
+            const ov = document.getElementById('fbOverlay');
+            if (!kind) { ov.classList.add('hidden'); return; }
+            ov.classList.remove('hidden');
+            document.getElementById('fbOverlayMsg').innerHTML = msg || '';
+            document.getElementById('fbSpinner').classList.toggle('hidden', kind !== 'loading');
+            document.getElementById('fbLoginBtn').classList.toggle('hidden', kind !== 'login');
+            document.getElementById('fbRetryBtn').classList.toggle('hidden', kind !== 'error');
+            document.getElementById('fbLogoutBtn').classList.toggle('hidden', !(kind === 'denied' || kind === 'error'));
+        }
+        function showFileModeNotice() {
+            const box = document.getElementById('historyNotice');
+            if (!box || !box.parentNode) return;
+            box.parentNode.insertAdjacentHTML('afterbegin', `<div class="flex flex-wrap items-center justify-between gap-2 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-2xl px-4 py-2.5 text-xs font-bold"><span><i class="fa-solid fa-bolt mr-1"></i>Bạn đang mở file trên máy. Bản online dùng Firebase: mở nhanh, đồng bộ tức thì.</span><a href="${ONLINE_URL}" class="bg-indigo-600 text-white px-3 py-1.5 rounded-full">Mở bản online</a></div>`);
+        }
+
+        function fbInit() {
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                fbAuth = firebase.auth();
+                fbDb = firebase.firestore();
+                fbDb.settings({ ignoreUndefinedProperties: true, merge: true });
+                fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {});   // lưu đệm trên máy: mở là có dữ liệu, mất mạng vẫn dùng được
+            } catch (e) { setSyncState('err', 'Không khởi động được Firebase: ' + e.message); return; }
+            setSyncState('busy', 'Đang kết nối Firebase...');
+            if (!fbHadCache) showFbOverlay('loading', 'Đang mở...');
+            fbAuth.getRedirectResult().catch(e => showFbOverlay('login', 'Đăng nhập chưa thành công: ' + esc(e.message)));
+            fbAuth.onAuthStateChanged(onFbUser);
+        }
+        async function fbLogin() {
+            const pv = new firebase.auth.GoogleAuthProvider();
+            pv.setCustomParameters({ prompt: 'select_account' });
+            try { await fbAuth.signInWithPopup(pv); }
+            catch (e) {
+                if (/popup|operation-not-supported|web-storage/.test(e.code || '')) { try { await fbAuth.signInWithRedirect(pv); } catch (e2) { showFbOverlay('login', esc(e2.message)); } }
+                else if (e.code !== 'auth/cancelled-popup-request' && e.code !== 'auth/popup-closed-by-user') showFbOverlay('login', 'Đăng nhập chưa thành công: ' + esc(e.message));
+            }
+        }
+        async function fbLogout() {
+            if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+            try { await fbAuth.signOut(); } catch (e) {}
+            try { localStorage.removeItem('family_students_data_v2'); } catch (e) {}   // máy dùng chung: không để lại dữ liệu
+            closeModal('syncModal');
+            showFbOverlay('login', 'Đã đăng xuất.');
+        }
+        function onFbUser(user) {
+            fbUser = user || null;
+            if (!user) {
+                if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+                showFbOverlay('login', 'Đăng nhập bằng tài khoản Google của gia đình để xem và cập nhật sổ học tập.');
+                setSyncState('off');
+                return;
+            }
+            if (!ALLOWED_EMAILS.includes(String(user.email || '').toLowerCase())) {
+                showFbOverlay('denied', `Tài khoản <b>${esc(user.email)}</b> chưa được cấp quyền xem sổ học tập này.`);
+                return;
+            }
+            if (!fbHadCache) showFbOverlay('loading', 'Đang tải dữ liệu...');
+            else showFbOverlay(null);
+            fbSubscribe();
+        }
+        function fbSubscribe() {
+            if (fbUnsub) fbUnsub();
+            fbFirstSnap = true;
+            fbUnsub = kidsCol().orderBy('order').onSnapshot(snap => {
+                if (snap.empty) {
+                    if (!snap.metadata.fromCache) fbFirstMigration();
+                    return;
+                }
+                fbLast = {}; fbOrder = {};
+                const remote = [];
+                snap.docs.forEach(d => { const v = d.data(); if (v && v.data) { remote.push(v.data); fbLast[d.id] = JSON.stringify(v.data); fbOrder[d.id] = v.order; } });
+                if (!fbTimer && remote.length && JSON.stringify(remote) !== JSON.stringify(studentsData)) {
+                    fbApplying = true;
+                    studentsData = remote;
+                    migrateData();
+                    try { localStorage.setItem('family_students_data_v2', JSON.stringify(studentsData)); } catch (e) {}
+                    fbApplying = false;
+                    if (!studentsData.some(x => x.id === currentStudentId)) currentStudentId = studentsData[0].id;
+                    renderKidTabs(); renderYearSelector();
+                    if (isOverview) renderOverview(); else renderCurrentStudentData();
+                }
+                showFbOverlay(null);
+                if (!snap.metadata.fromCache) setSyncState(snap.metadata.hasPendingWrites ? 'busy' : 'ok', snap.metadata.hasPendingWrites ? 'Đang lưu lên Firebase...' : 'Đã đồng bộ với Firebase');
+                if (fbFirstSnap && !snap.metadata.fromCache) {
+                    fbFirstSnap = false;
+                    setTimeout(migrateImagesToDrive, 1500);
+                    let pend = null; try { pend = localStorage.getItem('fb_backup_pending'); } catch (e) {}
+                    if (pend) setTimeout(fbBackupNow, 3000);   // lần trước chưa kịp sao lưu sang Sheet
+                }
+            }, err => {
+                if (err.code === 'permission-denied') showFbOverlay('denied', `Tài khoản <b>${esc(fbUser ? fbUser.email : '')}</b> chưa được cấp quyền (Firestore Rules).`);
+                else setSyncState('err', 'Lỗi Firebase: ' + err.message);
+            });
+        }
+        function fbSchedulePush() {
+            clearTimeout(fbTimer);
+            fbTimer = setTimeout(fbPushNow, 400);
+            setSyncState('dirty', 'Đang lưu...');
+        }
+        async function fbPushNow() {
+            clearTimeout(fbTimer); fbTimer = null;
+            if (!fbUser || !fbDb) return false;
+            const batch = fbDb.batch(), col = kidsCol(), ids = new Set();
+            let n = 0;
+            studentsData.forEach((st, i) => {
+                ids.add(st.id);
+                const j = JSON.stringify(st);
+                if (j !== fbLast[st.id] || fbOrder[st.id] !== i) {
+                    batch.set(col.doc(st.id), { data: JSON.parse(j), order: i, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: fbUser.email });
+                    fbLast[st.id] = j; fbOrder[st.id] = i; n++;
+                }
+            });
+            Object.keys(fbLast).forEach(id => { if (!ids.has(id)) { batch.delete(col.doc(id)); delete fbLast[id]; delete fbOrder[id]; n++; } });
+            if (!n) { setSyncState('ok', 'Đã đồng bộ với Firebase'); return true; }
+            setSyncState('busy', navigator.onLine ? 'Đang lưu lên Firebase...' : 'Đã lưu trên máy, sẽ tự gửi lên Firebase khi có mạng');
+            try {
+                await batch.commit();
+                setSyncState('ok', 'Đã lưu lên Firebase lúc ' + new Date().toLocaleTimeString('vi-VN'));
+                fbScheduleBackup();
+                return true;
+            } catch (e) {
+                fbLast = {};   // lần sau gửi lại đủ
+                setSyncState('err', 'Lỗi lưu Firebase: ' + e.message);
+                return false;
+            }
+        }
+        // Bản sao sang Google Sheet (để xem/in, email nhắc lịch) - chạy nền, không làm chậm app
+        // (ghi nhớ "còn chờ sao lưu" để lần mở sau làm tiếp nếu trang bị đóng trước khi kịp gửi)
+        function fbScheduleBackup() {
+            try { localStorage.setItem('fb_backup_pending', '1'); } catch (e) {}
+            clearTimeout(fbBackupTimer); fbBackupTimer = setTimeout(fbBackupNow, 5000);
+        }
+        async function fbBackupNow() {
+            clearTimeout(fbBackupTimer);
+            if (!syncCfg.url || !fbUser) return;
+            try {
+                await syncRequest({ action: 'save', savedAt: Date.now(), baseTs: 0, force: true, imgs: {}, data: studentsData }, 120000);
+                try { localStorage.removeItem('fb_backup_pending'); } catch (e) {}
+            } catch (e) { console.warn('Chưa sao lưu được sang Google Sheet:', e.message); }
+        }
+        // Lần đầu: chuyển dữ liệu từ Google Sheet sang Firebase
+        async function fbFirstMigration() {
+            if (fbMigrating) return;
+            fbMigrating = true;
+            showFbOverlay('loading', 'Lần đầu dùng Firebase: đang chuyển dữ liệu từ Google Sheet sang...');
+            let data = null, lastErr = '';
+            const tryLoad = async () => { const j = await syncRequest({ action: 'load' }, 120000); if (!j.empty && Array.isArray(j.data) && j.data.length) data = j.data; };
+            try { await tryLoad(); }
+            catch (e) {
+                lastErr = e.message;
+                if (/mật khẩu|token|quyền/i.test(e.message)) {
+                    const pw = prompt('Để chuyển dữ liệu lần đầu, nhập mật khẩu Google Sheet (dòng SECRET trong Apps Script):');
+                    if (pw) { syncCfg.token = pw.trim(); saveSyncCfg(); try { await tryLoad(); lastErr = ''; } catch (e2) { lastErr = e2.message; } }
+                }
+            }
+            if (!data && fbHadCache && studentsData.some(x => x.name && x.name !== 'Bé')) data = studentsData;   // dùng dữ liệu đang có trên máy
+            if (!data) {
+                fbMigrating = false;
+                showFbOverlay('error', 'Chưa lấy được dữ liệu từ Google Sheet' + (lastErr ? ': ' + esc(lastErr) : '.') + '<br>Kiểm tra mạng / mật khẩu rồi bấm Thử lại.');
+                return;
+            }
+            fbApplying = true; studentsData = data; migrateData(); fbApplying = false;
+            try { localStorage.setItem('family_students_data_v2', JSON.stringify(studentsData)); } catch (e) {}
+            fbLast = {}; fbOrder = {};
+            const ok = await fbPushNow();
+            fbMigrating = false;
+            if (ok) {
+                showFbOverlay(null);
+                currentStudentId = studentsData[0].id;
+                renderKidTabs(); renderYearSelector(); if (isOverview) renderOverview(); else renderCurrentStudentData();
+                showToast('Đã chuyển dữ liệu sang Firebase', `${studentsData.length} hồ sơ · từ giờ mở app là có dữ liệu ngay`);
+            } else showFbOverlay('error', 'Không ghi được lên Firebase. Bấm Thử lại.');
+        }
+        window.addEventListener('beforeunload', () => { if (FB_MODE && fbTimer) fbPushNow(); });
+
         // --- UTILS ---
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) modal.classList.add('hidden');
+            if (modalId === 'mediaModal' && mediaNewUploads.length) { trashDriveFiles(mediaNewUploads); mediaNewUploads = []; }   // bấm Hủy: bỏ file vừa tải lên
         }
     </script>
 </body>
