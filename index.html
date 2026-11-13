@@ -506,16 +506,25 @@
         <section id="section-gallery" class="space-y-6 hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-800">Thư Viện Ảnh & Video Trường Học</h3>
-                    <p class="text-xs text-slate-500">Lưu lại những khoảnh khắc vui vẻ ở trường</p>
+                    <h3 class="text-lg font-bold text-slate-800">Dòng Thời Gian Kỷ Niệm</h3>
+                    <p class="text-xs text-slate-500">Mỗi khoảnh khắc là một bài viết: ảnh, cảm xúc, câu chuyện và lời nhắn của cả nhà</p>
                 </div>
                 <button onclick="openMediaModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2 w-full sm:w-auto">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Thêm Ảnh/Video
+                    <i class="fa-solid fa-pen-to-square"></i> Đăng khoảnh khắc
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" id="galleryGrid">
-                <!-- Dynamic Media Items -->
+            <div class="max-w-2xl mx-auto w-full space-y-4">
+                <!-- ô "Hôm nay có gì vui?" giống Facebook -->
+                <button onclick="openMediaModal()" class="w-full flex items-center gap-3 bg-white border border-slate-200 rounded-3xl p-3 sm:p-4 shadow-sm hover:bg-slate-50 text-left">
+                    <img id="feedComposerAvatar" src="https://placehold.co/80x80?text=%F0%9F%91%B6" class="w-10 h-10 rounded-full object-cover bg-slate-100 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=%F0%9F%91%B6'">
+                    <span id="feedComposerText" class="flex-1 bg-slate-100 rounded-full px-4 py-2.5 text-sm text-slate-500">Hôm nay bé có gì vui?</span>
+                    <i class="fa-solid fa-images text-emerald-500 text-lg"></i>
+                </button>
+                <div class="relative">
+                    <div class="absolute left-[5px] top-3 bottom-3 w-0.5 bg-slate-200"></div>
+                    <div id="galleryGrid" class="space-y-5"></div>
+                </div>
             </div>
         </section>
 
@@ -545,7 +554,7 @@
     <footer class="bg-white border-t border-slate-200 py-6 mt-12">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 space-y-1">
             <p class="font-bold text-slate-600">Gia Đình Là Tốt Nhất ❤️ Lịch Sử Học Tập Của Các Con</p>
-            <p>Dữ liệu lưu trữ an toàn ngay trên trình duyệt (LocalStorage)</p>
+            <p>Dữ liệu lưu trên Firebase · ảnh & video trên Google Drive · bản sao trên Google Sheet</p>
         </div>
     </footer>
 
@@ -883,6 +892,15 @@
                     <input type="text" id="mediaTitle" placeholder="Lễ Khai Giảng, Thi Văn Nghệ..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Cảm xúc</label>
+                    <input type="hidden" id="mediaFeeling">
+                    <div id="feelingChips" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nội dung / câu chuyện</label>
+                    <textarea id="mediaContent" rows="4" placeholder="Hôm nay con được cô khen vì..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Dán link ảnh / video (mỗi link 1 dòng)</label>
                     <textarea id="mediaUrl" rows="2" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
                     <p class="text-[12px] text-slate-400 mb-2">Hoặc chọn <b>nhiều ảnh / video</b> từ thiết bị: tự tải lên <b>Google Drive</b> (giữ nguyên độ nét; video tối đa 30MB). Bấm vào ảnh để đặt làm ảnh bìa.</p>
@@ -896,7 +914,7 @@
                 </div>
                 <div class="flex justify-end space-x-2 pt-2">
                     <button type="button" onclick="closeModal('mediaModal')" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Hủy</button>
-                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md">Tải Vào Thư Viện</button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md">Đăng</button>
                 </div>
             </form>
         </div>
@@ -1006,7 +1024,7 @@
  *   BangDiem      : điểm các môn (cột ĐTB tự tính bằng công thức, không cần nhập)
  *   ThanhTich     : bằng khen, giải thưởng
  *   KeHoach       : lịch hẹn, nhắc việc
- *   KyNiem        : ảnh / video kỷ niệm (dán link; 1 khoảnh khắc nhiều ảnh = mỗi link 1 dòng, Alt+Enter để xuống dòng)
+ *   KyNiem        : bài viết kỷ niệm (ảnh/video, cảm xúc, nội dung, bình luận) - (dán link; 1 khoảnh khắc nhiều ảnh = mỗi link 1 dòng, Alt+Enter để xuống dòng)
  *
  * FIREBASE (từ phiên bản 7): dữ liệu chính nằm trên Firebase Firestore. Google Sheet này là BẢN SAO tự cập nhật
  *   sau mỗi thay đổi trong app (để xem, lọc, in, sao lưu và gửi email nhắc lịch). Sửa trong Sheet không quay ngược vào app.
@@ -1047,6 +1065,8 @@ const SESS = [['sang', 'Sáng'], ['chieu', 'Chiều'], ['them', 'Học thêm']];
 const TYPES = [['meeting', 'Họp phụ huynh'], ['exam', 'Thi / Kiểm tra'], ['class', 'Học thêm / Lớp'], ['event', 'Sự kiện / Dã ngoại'], ['health', 'Khám / Tiêm chủng'], ['other', 'Khác']];
 const MEDIA_T = [['image', 'Ảnh'], ['video', 'Video']];
 const DONE_T = ['Chưa xong', 'Đã xong'];
+const FEEL_T = [['vui', '😊 vui vẻ'], ['hanh-phuc', '🥰 hạnh phúc'], ['tu-hao', '😎 tự hào'], ['hao-hung', '🤩 hào hứng'], ['yeu-thuong', '❤️ được yêu thương'],
+                ['biet-on', '🙏 biết ơn'], ['buon-cuoi', '😂 buồn cười'], ['ngac-nhien', '😲 ngạc nhiên'], ['co-gang', '💪 quyết tâm'], ['met', '😴 mệt'], ['buon', '😢 buồn'], ['nho', '🥹 xúc động']];
 
 const HEAD = {
   HocSinh:      ['Mã', 'Họ tên', 'Ngày sinh', 'SĐT', 'Quê quán', 'CCCD / Định danh', 'Ngày cấp', 'Lớp', 'Trường', 'Ảnh đại diện (URL)'],
@@ -1055,13 +1075,13 @@ const HEAD = {
   BangDiem:     ['Bé', 'Năm học', 'Môn', 'Giữa kỳ 1', 'Cuối kỳ 1', 'Giữa kỳ 2', 'Cuối kỳ 2', 'ĐTB HK1 (tự tính)', 'ĐTB HK2 (tự tính)', 'ĐTB cả năm (tự tính)', 'Ghi chú'],
   ThanhTich:    ['Bé', 'Năm học', 'Cấp', 'Thành tích', 'Mô tả'],
   KeHoach:      ['Bé', 'Nội dung', 'Loại', 'Ngày', 'Giờ', 'Nhắc trước (phút)', 'Trạng thái', 'Ghi chú'],
-  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)']   // nhiều ảnh: mỗi link 1 dòng trong ô
+  KyNiem:       ['Bé', 'Loại', 'Tiêu đề', 'Ngày', 'Liên kết (URL)', 'Cảm xúc', 'Nội dung', 'Bình luận', 'Thương']   // nhiều ảnh: mỗi link 1 dòng trong ô
 };
 
 // ======================= WEB APP =======================
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() { return out_({ ok: true, ping: true, version: 7, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
+function doGet() { return out_({ ok: true, ping: true, version: 8, message: 'So Hoc Tap Gia Dinh - backend dang chay' }); }
 
 function doPost(e) {
   // Tải ảnh / video lên Drive: không cần khóa Sheet, để lưu dữ liệu không phải chờ
@@ -1077,7 +1097,7 @@ function doPost(e) {
   try {
     lock.waitLock(25000);
     const body = body0;
-    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 7, driveFolderUrl: driveFolderUrl_() });
+    if (body.action === 'ping') return out_({ ok: true, ping: true, version: 8, driveFolderUrl: driveFolderUrl_() });
     if (body.action === 'stamp') return out_({ ok: true, savedAt: hasData_() ? currentStamp_() : 0 });
     if (body.action === 'load') {
       if (!hasData_()) return out_({ ok: true, empty: true });
@@ -1254,8 +1274,12 @@ function buildData_(warn) {
   rowsObj_(ss, SH.KN).forEach(function (o) {
     const s = kid(o, SH.KN); if (!s) return; const title = txt_(g_(o, 'Tiêu đề'));
     const urls = String(g_(o, 'Liên kết (URL)') || '').split(/[\r\n]+/).map(res).filter(function (u) { return u; });
-    if (!title && !urls.length) return;
-    s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: urls[0] || '', urls: urls, date: iso_(g_(o, 'Ngày'), tz) });
+    if (!title && !urls.length && !txt_(g_(o, 'Nội dung'))) return;
+    const cms = String(g_(o, 'Bình luận') || '').split(/[\r\n]+/).filter(function (x) { return x.trim(); }).map(function (x, k) {
+      const i = x.indexOf(': '); return { id: k + 1, author: i > 0 ? x.slice(0, i).trim() : '', text: i > 0 ? x.slice(i + 2) : x.trim(), ts: 0 }; });
+    const likes = txt_(g_(o, 'Thương')).split(/\s*,\s*/).filter(function (x) { return x; });
+    s.media.push({ id: s.media.length + 1, type: toKey_(MEDIA_T, g_(o, 'Loại'), 'image'), title: title, url: urls[0] || '', urls: urls, date: iso_(g_(o, 'Ngày'), tz),
+                   feeling: toKey_(FEEL_T, g_(o, 'Cảm xúc'), ''), content: txt_(g_(o, 'Nội dung')), comments: cms, likes: likes });
   });
   return students;
 }
@@ -1337,7 +1361,9 @@ function writeTabs_(ss, data, legacyImgs, refs) {
     (s.media || []).forEach(function (m) {
       const urls = (m.urls && m.urls.length) ? m.urls : (m.url ? [m.url] : []);
       const links = urls.map(function (u, k) { return stash('md-' + s.id + '-' + m.id + '-' + k, u); });
-      kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(links.join('\n'))]);   // nhiều ảnh: mỗi link 1 dòng
+      const cm = (m.comments || []).map(function (c) { return (c.author || '') + ': ' + String(c.text || '').replace(/\n/g, ' '); }).join('\n');
+      kn.push([nm, toLabel_(MEDIA_T, m.type) || 'Ảnh', T_(m.title), dmy_(m.date), T_(links.join('\n')),
+               T_(toLabel_(FEEL_T, m.feeling)), T_(m.content), T_(cm), T_((m.likes || []).join(', '))]);   // nhiều ảnh: mỗi link 1 dòng
     });
   });
 
@@ -1365,7 +1391,7 @@ function writeTabs_(ss, data, legacyImgs, refs) {
   put_(ss, SH.KH, HEAD.KeHoach, kh, all(8), [], function (sh, n) {
     dvKid_(ss, sh, n); dvList_(sh, 3, TYPES.map(function (d) { return d[1]; }), n); dvList_(sh, 7, DONE_T, n);
   });
-  put_(ss, SH.KN, HEAD.KyNiem, kn, all(5), [], function (sh, n) { dvKid_(ss, sh, n); dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), n); });
+  put_(ss, SH.KN, HEAD.KyNiem, kn, all(9), [], function (sh, n) { dvKid_(ss, sh, n); dvList_(sh, 2, MEDIA_T.map(function (d) { return d[1]; }), n); });
 }
 
 // các mã ảnh đang có trong sheet _Anh
@@ -1809,7 +1835,7 @@ function authOk_(b) {
             // Lần đầu mở bản file này: dùng dữ liệu trong file (dữ liệu cũ trên máy được cất vào bản sao lưu)
             if (saved) { try { localStorage.setItem('family_students_data_backup', saved); } catch (e) {} }
             studentsData = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
-            saveData();
+            if (FB_MODE) { fbApplying = true; saveData(); fbApplying = false; } else saveData();
             syncMeta.remoteTs = SNAPSHOT_TS;               // đã khớp với bản Sheet lúc tạo file
             syncMeta.syncedLocalTs = syncMeta.localTs;     // không tính là thay đổi chưa lưu
             syncMeta.knownImgs = [];
@@ -1876,7 +1902,7 @@ function authOk_(b) {
                 const displayGrade = yearData.grade || student.grade;
                 html += `
                     <button onclick="switchStudent('${student.id}')" ${active ? 'data-active="1"' : ''} class="${base} ${active ? on : off}">
-                        <img src="${esc(student.avatar)}" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${active ? 'border-white/60' : 'border-white'} flex-shrink-0" onerror="this.src='https://placehold.co/100x100'">
+                        <img src="${esc(student.avatar)}" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 ${active ? 'border-white/60' : 'border-white'} flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100'">
                         <span class="min-w-0 flex-1">
                             <span class="block text-xs sm:text-sm font-extrabold truncate leading-tight"><span class="sm:hidden">${esc(shortName(student.name))}</span><span class="hidden sm:inline">${esc(student.name)}</span></span>
                             <span class="block text-[11px] sm:text-[12px] font-bold truncate mt-0.5 ${active ? 'text-indigo-100' : 'text-slate-400'}">${esc(displayGrade)}</span>
@@ -1959,7 +1985,7 @@ function authOk_(b) {
             document.getElementById('overviewTodayCount').textContent = `${totalLessons} tiết · ${totalExtra} môn học thêm`;
             document.getElementById('overviewToday').innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-2">` + sums.map(({ s, i, main, sang, chieu, extra }) => `
                 <button onclick="switchStudent('${s.id}','timetable')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 transition text-left">
-                    <img src="${esc(s.avatar)}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-white" onerror="this.src='https://placehold.co/100x100'">
+                    <img src="${esc(s.avatar)}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-white" onerror="this.onerror=null;this.src='https://placehold.co/100x100'">
                     <span class="min-w-0 flex-1">
                         <span class="flex items-center gap-1.5 text-sm font-extrabold text-slate-800 truncate"><span class="w-2 h-2 rounded-full ${kidAccent(i).dot}"></span>${esc(shortName(s.name))}</span>
                         <span class="block text-[12px] text-slate-500 truncate">${main ? `${main} tiết trên lớp${sang && chieu ? ` (sáng ${sang} · chiều ${chieu})` : sang ? ' (buổi sáng)' : ' (buổi chiều)'}` : 'Không có tiết trên lớp'}</span>
@@ -1984,7 +2010,7 @@ function authOk_(b) {
                     <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                         <div class="h-1.5 bg-gradient-to-r ${acc.bar}"></div>
                         <button onclick="switchStudent('${s.id}')" class="flex items-center gap-3 p-4 text-left hover:bg-slate-50 transition">
-                            <img src="${esc(s.avatar)}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow flex-shrink-0" onerror="this.src='https://placehold.co/100x100'">
+                            <img src="${esc(s.avatar)}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100'">
                             <span class="min-w-0 flex-1">
                                 <span class="block font-extrabold text-slate-800 truncate">${esc(s.name)}</span>
                                 <span class="block text-xs text-slate-500 truncate">${esc(yd.grade || s.grade || '')} · ${esc(yd.school || s.school || '')}</span>
@@ -2612,42 +2638,185 @@ function authOk_(b) {
         }
 
         // --- SECTION 4: GALLERY ---
+        const FEELINGS = [
+            ['vui', '😊', 'vui vẻ'], ['hanh-phuc', '🥰', 'hạnh phúc'], ['tu-hao', '😎', 'tự hào'], ['hao-hung', '🤩', 'hào hứng'],
+            ['yeu-thuong', '❤️', 'được yêu thương'], ['biet-on', '🙏', 'biết ơn'], ['buon-cuoi', '😂', 'buồn cười'], ['ngac-nhien', '😲', 'ngạc nhiên'],
+            ['co-gang', '💪', 'quyết tâm'], ['met', '😴', 'mệt'], ['buon', '😢', 'buồn'], ['nho', '🥹', 'xúc động']
+        ];
+        const feelingOf = k => FEELINGS.find(f => f[0] === k);
+        function renderFeelingChips() {
+            const cur = document.getElementById('mediaFeeling').value;
+            document.getElementById('feelingChips').innerHTML = FEELINGS.map(([k, e, t]) =>
+                `<button type="button" onclick="pickFeeling('${k}')" class="px-2.5 py-1.5 rounded-full border text-xs font-bold transition ${cur === k ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}">${e} ${t}</button>`).join('');
+        }
+        function pickFeeling(k) { const el = document.getElementById('mediaFeeling'); el.value = el.value === k ? '' : k; renderFeelingChips(); }
+
+        // Tên người bình luận / thả tim
+        function authorName() {
+            let n = '';
+            try { n = localStorage.getItem('family_author_name') || ''; } catch (e) {}
+            if (!n) {
+                const def = (typeof fbUser !== 'undefined' && fbUser && (fbUser.displayName || String(fbUser.email || '').split('@')[0])) || '';
+                n = (prompt('Bạn muốn hiện tên là gì khi bình luận? (VD: Bố, Mẹ, Ông, Bà)', def) || '').trim();
+                if (!n) return '';
+                try { localStorage.setItem('family_author_name', n); } catch (e) {}
+            }
+            return n;
+        }
+        function relDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso + 'T00:00:00'), t = new Date(); t.setHours(0, 0, 0, 0);
+            const diff = Math.round((t - d) / 86400000);
+            return diff === 0 ? 'Hôm nay' : diff === 1 ? 'Hôm qua' : diff > 1 && diff < 7 ? `${diff} ngày trước` : formatDateVN(iso);
+        }
+        function timeAgo(ts) {
+            const m = Math.round((Date.now() - ts) / 60000);
+            if (m < 1) return 'Vừa xong'; if (m < 60) return m + ' phút'; if (m < 1440) return Math.round(m / 60) + ' giờ';
+            const d = new Date(ts); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+        function initials(n) { return String(n || '?').trim().split(/\s+/).slice(-1)[0].charAt(0).toUpperCase(); }
+
+        // Lưới ảnh kiểu Facebook: 1 / 2 / 3 / 4+ ảnh
+        function postPhotosHtml(item) {
+            const us = mediaUrls(item); const n = us.length;
+            if (!n) return '';
+            const cell = (u, k, cls, extra = '') => {
+                const vid = isVideoUrl(u) || (item.type === 'video' && k === 0);
+                const inner = vid && !driveId(u)
+                    ? `<div class="w-full h-full bg-slate-900 flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`
+                    : `<img src="${esc(thumbUrl(u, n === 1 ? 1200 : 700))}" loading="lazy" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/475569?text=%E1%BA%A2nh'">${vid ? '<span class="absolute inset-0 flex items-center justify-center text-white text-4xl drop-shadow pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>' : ''}`;
+                return `<div class="relative overflow-hidden bg-slate-100 cursor-pointer ${cls}" onclick="openAlbum(${item.id}, ${k})">${inner}${extra}</div>`;
+            };
+            if (n === 1) return `<div class="max-h-[520px] overflow-hidden">${cell(us[0], 0, 'w-full aspect-[4/3]')}</div>`;
+            if (n === 2) return `<div class="grid grid-cols-2 gap-0.5">${us.map((u, k) => cell(u, k, 'aspect-square')).join('')}</div>`;
+            if (n === 3) return `<div class="grid grid-cols-2 gap-0.5">${cell(us[0], 0, 'row-span-2 h-full')}${cell(us[1], 1, 'aspect-square')}${cell(us[2], 2, 'aspect-square')}</div>`;
+            const more = n - 4;
+            return `<div class="grid grid-cols-2 gap-0.5">${us.slice(0, 4).map((u, k) => cell(u, k, 'aspect-square', k === 3 && more > 0 ? `<div class="absolute inset-0 bg-slate-900/55 flex items-center justify-center text-white text-3xl font-black">+${more}</div>` : '')).join('')}</div>`;
+        }
+
+        const commentDrafts = {};
+        let openComments = {};
         function renderGallery() {
             const student = getCurrentStudent();
             const grid = document.getElementById('galleryGrid');
             if (!grid) return;
-            grid.innerHTML = '';
-
-            if (!student.media || student.media.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-12">Chưa có hình ảnh/video kỷ niệm nào. Bấm "Thêm Ảnh/Video" để lưu trữ!</div>`;
+            const av = document.getElementById('feedComposerAvatar');
+            if (av) av.src = student.avatar || '';
+            const ct = document.getElementById('feedComposerText');
+            if (ct) ct.textContent = `Hôm nay ${shortName(student.name)} có gì vui?`;
+            // giữ chữ đang gõ trong ô bình luận khi trang tự cập nhật
+            const focused = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.cmt : null;
+            const posts = [...(student.media || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || b.id - a.id);
+            if (!posts.length) {
+                grid.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-3xl border border-dashed border-slate-200">Chưa có khoảnh khắc nào. Bấm "Đăng khoảnh khắc" để lưu lại kỷ niệm đầu tiên!</div>`;
                 return;
             }
-
-            student.media.forEach(item => {
-                grid.innerHTML += `
-                    <div class="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm group hover:shadow-md transition flex flex-col">
-                        <div class="relative h-32 sm:h-44 bg-slate-900 cursor-pointer overflow-hidden" onclick="openAlbum(${item.id}, 0)">
-                            ${mediaCoverHtml(item)}
-                            ${mediaUrls(item).length > 1 ? `<span class="absolute bottom-2 left-2 bg-slate-900/70 text-white text-[12px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-images mr-1"></i>${mediaUrls(item).length}</span>` : ''}
-                            <button onclick="event.stopPropagation(); openMediaModal(${item.id})" class="absolute top-2 right-12 sm:right-10 bg-slate-900/60 hover:bg-indigo-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="event.stopPropagation(); deleteMediaItem(${item.id})" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-rose-600 text-white w-9 h-9 sm:w-7 sm:h-7 rounded-full text-xs flex items-center justify-center transition">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+            const me = (() => { try { return localStorage.getItem('family_author_name') || ''; } catch (e) { return ''; } })();
+            let lastMonth = null, html = '';
+            posts.forEach(item => {
+                const d = item.date ? new Date(item.date + 'T00:00:00') : null;
+                const mk = d ? `Tháng ${d.getMonth() + 1}, ${d.getFullYear()}` : 'Chưa có ngày';
+                if (mk !== lastMonth) {
+                    lastMonth = mk;
+                    html += `<div class="relative pl-6 pt-1"><span class="absolute left-0 top-2 w-3 h-3 rounded-full bg-indigo-600 ring-4 ring-indigo-100"></span><span class="text-xs font-extrabold text-indigo-600 uppercase tracking-wide">${mk}</span></div>`;
+                }
+                const f = feelingOf(item.feeling);
+                const likes = item.likes || [], comments = item.comments || [];
+                const liked = me && likes.includes(me);
+                const long = (item.content || '').length > 280;
+                const showCmt = openComments[item.id] || comments.length > 0;
+                html += `
+                <div class="relative pl-6">
+                    <span class="absolute left-[1px] top-6 w-2.5 h-2.5 rounded-full bg-slate-300 ring-4 ring-slate-50"></span>
+                    <article class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="flex items-start gap-3 p-4 pb-2">
+                            <img src="${esc(student.avatar || '')}" class="w-10 h-10 rounded-full object-cover bg-slate-100 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=%F0%9F%91%B6'">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-sm leading-snug"><b class="text-slate-800">${esc(shortName(student.name))}</b>${f ? ` <span class="text-slate-500">đang cảm thấy ${f[1]} <b class="text-slate-700">${f[2]}</b></span>` : ''}</div>
+                                <div class="text-[12px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${esc(relDate(item.date))}${item.date && relDate(item.date) !== formatDateVN(item.date) ? ' · ' + formatDateVN(item.date) : ''}</div>
+                            </div>
+                            <button onclick="openMediaModal(${item.id})" title="Sửa bài" class="w-8 h-8 rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteMediaItem(${item.id})" title="Xóa bài" class="w-8 h-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"><i class="fa-solid fa-trash text-xs"></i></button>
                         </div>
-                        <div class="p-3 flex-grow flex flex-col justify-between">
-                            <h5 class="font-bold text-xs text-slate-800 line-clamp-1">${esc(item.title)}</h5>
-                            <span class="text-[12px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.date}</span>
+                        <div class="px-4 pb-3">
+                            ${item.title ? `<h4 class="font-extrabold text-slate-800 text-base leading-snug">${esc(item.title)}</h4>` : ''}
+                            ${item.content ? `<p id="pc-${item.id}" class="text-sm text-slate-700 whitespace-pre-line mt-1 ${long ? 'line-clamp-4' : ''}">${esc(item.content)}</p>${long ? `<button onclick="document.getElementById('pc-${item.id}').classList.remove('line-clamp-4'); this.remove()" class="text-xs font-bold text-slate-500 hover:underline mt-0.5">Xem thêm</button>` : ''}` : ''}
                         </div>
-                    </div>
-                `;
+                        ${postPhotosHtml(item)}
+                        <div class="px-4 pt-2.5 flex items-center justify-between text-[12px] text-slate-500">
+                            <span>${likes.length ? `<span class="inline-flex w-5 h-5 rounded-full bg-rose-500 text-white items-center justify-center text-[10px] mr-1">❤</span>${esc(likes.length <= 2 ? likes.join(', ') : likes.slice(0, 2).join(', ') + ' và ' + (likes.length - 2) + ' người khác')}` : ''}</span>
+                            <span>${comments.length ? comments.length + ' bình luận' : ''}${mediaUrls(item).length > 1 ? ` · ${mediaUrls(item).length} ảnh` : ''}</span>
+                        </div>
+                        <div class="mx-4 mt-2 border-t border-slate-100 grid grid-cols-2">
+                            <button onclick="toggleLike(${item.id})" class="py-2 text-sm font-bold rounded-xl hover:bg-slate-50 ${liked ? 'text-rose-600' : 'text-slate-500'}"><i class="fa-${liked ? 'solid' : 'regular'} fa-heart mr-1.5"></i>Thương</button>
+                            <button onclick="focusComment(${item.id})" class="py-2 text-sm font-bold rounded-xl hover:bg-slate-50 text-slate-500"><i class="fa-regular fa-comment mr-1.5"></i>Bình luận</button>
+                        </div>
+                        <div class="px-4 pb-4 ${showCmt ? '' : 'hidden'}" id="cmts-${item.id}">
+                            <div class="space-y-2 mt-1">
+                                ${comments.map(c => `
+                                <div class="flex items-start gap-2 group">
+                                    <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black flex-shrink-0">${esc(initials(c.author))}</span>
+                                    <div class="min-w-0">
+                                        <div class="bg-slate-100 rounded-2xl px-3 py-2"><b class="text-[13px] text-slate-800">${esc(c.author)}</b><div class="text-sm text-slate-700 whitespace-pre-line">${esc(c.text)}</div></div>
+                                        <div class="text-[11px] text-slate-400 mt-0.5 ml-2">${timeAgo(c.ts)}${c.author === me ? ` · <button onclick="deleteComment(${item.id}, ${c.id})" class="hover:underline hover:text-rose-600">Xóa</button>` : ''}</div>
+                                    </div>
+                                </div>`).join('')}
+                            </div>
+                            <div class="flex items-end gap-2 mt-3">
+                                <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-black flex-shrink-0">${esc(initials(me || '?'))}</span>
+                                <textarea rows="1" data-cmt="${item.id}" id="cin-${item.id}" oninput="commentDrafts[${item.id}]=this.value; this.style.height='auto'; this.style.height=this.scrollHeight+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault(); addComment(${item.id});}" placeholder="Viết bình luận..." class="flex-1 resize-none bg-slate-100 rounded-2xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+                                <button onclick="addComment(${item.id})" class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0" title="Gửi"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+                            </div>
+                        </div>
+                    </article>
+                </div>`;
             });
+            grid.innerHTML = html;
+            Object.entries(commentDrafts).forEach(([id, v]) => { const el = document.getElementById('cin-' + id); if (el) el.value = v; });
+            if (focused) { const el = document.getElementById('cin-' + focused); if (el) { el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } }
+        }
+        function findPost(id) { return (getCurrentStudent().media || []).find(m => m.id === id); }
+        function focusComment(id) {
+            openComments[id] = true;
+            const box = document.getElementById('cmts-' + id);
+            if (box) box.classList.remove('hidden');
+            const el = document.getElementById('cin-' + id);
+            if (el) el.focus();
+        }
+        function addComment(id) {
+            const el = document.getElementById('cin-' + id);
+            const text = (el ? el.value : '').trim();
+            if (!text) return;
+            const who = authorName(); if (!who) return;
+            const m = findPost(id); if (!m) return;
+            if (!Array.isArray(m.comments)) m.comments = [];
+            m.comments.push({ id: Date.now(), author: who, text, ts: Date.now() });
+            delete commentDrafts[id];
+            openComments[id] = true;
+            saveData();
+            renderGallery();
+        }
+        function deleteComment(id, cid) {
+            const m = findPost(id); if (!m) return;
+            if (!confirm('Xóa bình luận này?')) return;
+            m.comments = (m.comments || []).filter(c => c.id !== cid);
+            saveData();
+            renderGallery();
+        }
+        function toggleLike(id) {
+            const who = authorName(); if (!who) return;
+            const m = findPost(id); if (!m) return;
+            m.likes = Array.isArray(m.likes) ? m.likes : [];
+            m.likes = m.likes.includes(who) ? m.likes.filter(x => x !== who) : [...m.likes, who];
+            saveData();
+            renderGallery();
         }
 
         let mediaDraft = [];   // danh sách ảnh của khoảnh khắc đang sửa
         function openMediaModal(id) {
             document.getElementById('mediaForm').reset();
             document.getElementById('mediaEditId').value = id || '';
-            document.querySelector('#mediaModal h3').textContent = id ? 'Sửa Khoảnh Khắc' : 'Thêm Khoảnh Khắc (nhiều ảnh)';
+            document.querySelector('#mediaModal h3').textContent = id ? 'Sửa bài viết' : 'Đăng khoảnh khắc của ' + shortName(getCurrentStudent().name);
             mediaDraft = []; mediaNewUploads = []; mediaUploading = 0; setMediaUploadStatus('');
             if (id) {
                 const m = (getCurrentStudent().media || []).find(x => x.id === id);
@@ -2655,12 +2824,16 @@ function authOk_(b) {
                     document.getElementById('mediaType').value = m.type || 'image';
                     document.getElementById('mediaTitle').value = m.title || '';
                     document.getElementById('mediaDate').value = m.date || '';
+                    document.getElementById('mediaContent').value = m.content || '';
+                    document.getElementById('mediaFeeling').value = m.feeling || '';
                     mediaDraft = mediaUrls(m).slice();
                 }
             } else {
                 const n = new Date();
                 document.getElementById('mediaDate').value = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
             }
+            if (!id) { document.getElementById('mediaFeeling').value = ''; document.getElementById('mediaContent').value = ''; }
+            renderFeelingChips();
             renderMediaDraft();
             document.getElementById('mediaModal').classList.remove('hidden');
         }
@@ -2736,7 +2909,7 @@ function authOk_(b) {
                 <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border ${i === 0 ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'}">
                     ${isVideoUrl(u) && !driveId(u)
                         ? `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xl cursor-pointer" onclick="setMediaCover(${i})"><i class="fa-solid fa-circle-play"></i></div>`
-                        : `<img src="${esc(thumbUrl(u, 300))}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.src='https://placehold.co/200x200?text=Link'">${isVideoUrl(u) ? '<span class="absolute inset-0 flex items-center justify-center text-white text-xl pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>' : ''}`}
+                        : `<img src="${esc(thumbUrl(u, 300))}" class="w-full h-full object-cover cursor-pointer" onclick="setMediaCover(${i})" onerror="this.onerror=null;this.src='https://placehold.co/200x200?text=Link'">${isVideoUrl(u) ? '<span class="absolute inset-0 flex items-center justify-center text-white text-xl pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>' : ''}`}
                     ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-indigo-600/90 text-white text-[10px] font-bold text-center py-0.5">Ảnh bìa</span>' : ''}
                     <button type="button" onclick="removeMediaDraft(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/70 text-white text-[11px] flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
                 </div>`).join('') + (mediaDraft.length ? `<div class="col-span-4 text-[12px] text-slate-500">${mediaDraft.length} ảnh/video trong khoảnh khắc này</div>` : '');
@@ -2751,16 +2924,18 @@ function authOk_(b) {
             if (!student.media) student.media = [];
             const typed = document.getElementById('mediaUrl').value.split(/\s*\n\s*/).map(x => x.trim()).filter(Boolean);
             const urls = [...mediaDraft, ...typed.filter(u => !mediaDraft.includes(u))];
-            if (!urls.length) { alert('Hãy chọn ít nhất 1 ảnh hoặc dán 1 link.'); return; }
+            const content = document.getElementById('mediaContent').value.trim();
+            if (!urls.length && !content) { alert('Hãy thêm ít nhất 1 ảnh hoặc viết vài dòng nội dung.'); return; }
             const item = { type: document.getElementById('mediaType').value, title: document.getElementById('mediaTitle').value.trim(),
-                           date: document.getElementById('mediaDate').value, urls, url: urls[0] };
+                           date: document.getElementById('mediaDate').value, urls, url: urls[0] || '',
+                           feeling: document.getElementById('mediaFeeling').value, content };
             if (mediaUploading > 0) { alert('Đang tải ảnh lên, chờ xong rồi bấm lưu nhé.'); return; }
             const before = student.media.slice();
             const editId = Number(document.getElementById('mediaEditId').value) || null;
             const idx = editId ? student.media.findIndex(m => m.id === editId) : -1;
             const oldUrls = idx !== -1 ? mediaUrls(student.media[idx]) : [];
             if (idx !== -1) student.media[idx] = { ...student.media[idx], ...item };
-            else student.media.push({ id: Date.now(), ...item });
+            else student.media.push({ id: Date.now(), ...item, comments: [], likes: [] });
             try { saveData(); }
             catch (err) { alert('Bộ nhớ trình duyệt đã đầy, không lưu thêm ảnh được. Hãy bớt ảnh hoặc dán link Google Photos / Drive thay cho ảnh tải lên.'); student.media = before; return; }
             trashDriveFiles([...oldUrls, ...mediaNewUploads].filter(u => !urls.includes(u)));   // ảnh đã bỏ -> Thùng rác Drive
@@ -2798,7 +2973,7 @@ function authOk_(b) {
             const u = mediaUrls(item)[0] || '';
             const vid = isVideoUrl(u) || item.type === 'video';
             if (vid && !driveId(u)) return `<div class="w-full h-full flex items-center justify-center text-white text-3xl"><i class="fa-solid fa-circle-play"></i></div>`;
-            return `<img src="${esc(thumbUrl(u, 800))}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">` +
+            return `<img src="${esc(thumbUrl(u, 800))}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/475569?text=Media'">` +
                    (vid ? `<span class="absolute inset-0 flex items-center justify-center text-white text-4xl drop-shadow pointer-events-none"><i class="fa-solid fa-circle-play"></i></span>` : '');
         }
         async function ensureServerVersion() {
@@ -2875,7 +3050,7 @@ function authOk_(b) {
             const n = album.urls.length;
             document.getElementById('lightboxCaption').textContent = album.title + (n > 1 ? `  ·  ${album.i + 1}/${n}` : '');
             document.getElementById('lbPrev').style.display = document.getElementById('lbNext').style.display = n > 1 ? '' : 'none';
-            document.getElementById('lbThumbs').innerHTML = n > 1 ? album.urls.map((x, k) => `<img src="${esc(thumbUrl(x, 160))}" onclick="event.stopPropagation(); album.i=${k}; showAlbum()" class="w-14 h-14 flex-shrink-0 object-cover rounded-lg cursor-pointer border-2 ${k === album.i ? 'border-white' : 'border-transparent opacity-60'}" onerror="this.src='https://placehold.co/80x80?text=%E2%96%B6'">`).join('') : '';
+            document.getElementById('lbThumbs').innerHTML = n > 1 ? album.urls.map((x, k) => `<img src="${esc(thumbUrl(x, 160))}" onclick="event.stopPropagation(); album.i=${k}; showAlbum()" class="w-14 h-14 flex-shrink-0 object-cover rounded-lg cursor-pointer border-2 ${k === album.i ? 'border-white' : 'border-transparent opacity-60'}" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=%E2%96%B6'">`).join('') : '';
         }
 
         function openLightbox(url, type, caption) {
@@ -3614,8 +3789,8 @@ function authOk_(b) {
             syncServerVersion = ping.version || 1;
             out.push('✓ Kết nối được tới Apps Script, mật khẩu đúng'); show();
             if (ping.driveFolderUrl) { syncCfg.driveFolderUrl = ping.driveFolderUrl; saveSyncCfg(); }
-            if ((ping.version || 0) < 7) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
-            else out.push('✓ Mã Apps Script là bản mới nhất (v7: Drive + đăng nhập Google)');
+            if ((ping.version || 0) < 8) out.push('⚠ Mã Apps Script đang là bản cũ. Hãy dán lại mã mới rồi Triển khai → Quản lý bản triển khai → sửa → Phiên bản mới.');
+            else out.push('✓ Mã Apps Script là bản mới nhất (v8)');
             show();
             try {
                 const st = await syncRequest({ action: 'stamp', token: syncCfg.token });
@@ -3872,7 +4047,7 @@ function authOk_(b) {
             return slot.session === 'them' ? 'từ ' + st : st + '–' + addMin(st, 45);
         }
         function migrateData() {
-            (studentsData || []).forEach(st => (st.media || []).forEach(m => { if (!Array.isArray(m.urls)) m.urls = m.url ? [m.url] : []; }));
+            (studentsData || []).forEach(st => (st.media || []).forEach(m => { if (!Array.isArray(m.urls)) m.urls = m.url ? [m.url] : []; if (!Array.isArray(m.comments)) m.comments = []; if (!Array.isArray(m.likes)) m.likes = []; }));
             (studentsData || []).forEach(st => Object.values(st.academicYears || {}).forEach(yd => (yd.timetable || []).forEach(it => {
                 if (it.teacher !== undefined) return;
                 const m = String(it.note || '').match(/^\s*(?:GV|Giáo viên)\s*:\s*(.+)$/i);
@@ -3916,6 +4091,7 @@ function authOk_(b) {
 
         let fbDb = null, fbAuth = null, fbUser = null, fbUnsub = null, fbTimer = null, fbBackupTimer = null;
         let fbLast = {}, fbOrder = {}, fbApplying = false, fbFirstSnap = true, fbHadCache = false, fbMigrating = false;
+        let fbBase = false, fbDeferred = false;   // chỉ ghi lên Firebase khi đã biết dữ liệu trên máy chủ (tránh ghi đè bằng dữ liệu trống)
         const kidsCol = () => fbDb.collection('families').doc(FAMILY_ID).collection('kids');
 
         function showFbOverlay(kind, msg) {
@@ -3984,12 +4160,13 @@ function authOk_(b) {
             fbFirstSnap = true;
             fbUnsub = kidsCol().orderBy('order').onSnapshot(snap => {
                 if (snap.empty) {
-                    if (!snap.metadata.fromCache) fbFirstMigration();
+                    if (!snap.metadata.fromCache) { fbBase = true; fbFirstMigration(); }
                     return;
                 }
                 fbLast = {}; fbOrder = {};
                 const remote = [];
                 snap.docs.forEach(d => { const v = d.data(); if (v && v.data) { remote.push(v.data); fbLast[d.id] = JSON.stringify(v.data); fbOrder[d.id] = v.order; } });
+                fbBase = true;
                 if (!fbTimer && remote.length && JSON.stringify(remote) !== JSON.stringify(studentsData)) {
                     fbApplying = true;
                     studentsData = remote;
@@ -4002,6 +4179,7 @@ function authOk_(b) {
                 }
                 showFbOverlay(null);
                 if (!snap.metadata.fromCache) setSyncState(snap.metadata.hasPendingWrites ? 'busy' : 'ok', snap.metadata.hasPendingWrites ? 'Đang lưu lên Firebase...' : 'Đã đồng bộ với Firebase');
+                if (fbDeferred) { fbDeferred = false; fbSchedulePush(); }
                 if (fbFirstSnap && !snap.metadata.fromCache) {
                     fbFirstSnap = false;
                     setTimeout(migrateImagesToDrive, 1500);
@@ -4021,6 +4199,7 @@ function authOk_(b) {
         async function fbPushNow() {
             clearTimeout(fbTimer); fbTimer = null;
             if (!fbUser || !fbDb) return false;
+            if (!fbBase) { fbDeferred = true; return false; }
             const batch = fbDb.batch(), col = kidsCol(), ids = new Set();
             let n = 0;
             studentsData.forEach((st, i) => {
