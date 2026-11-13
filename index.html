@@ -3328,9 +3328,11 @@ function authOk_(b) {
             dirty: { dot: 'bg-amber-500',               icon: 'fa-cloud',             box: 'bg-amber-50 border-amber-200 text-amber-700' },
             err:   { dot: 'bg-rose-500',                icon: 'fa-triangle-exclamation', box: 'bg-rose-50 border-rose-200 text-rose-700' }
         };
+        let lastSyncMsg = '';
         function setSyncState(st, msg) {
             const prev = syncState;
             syncState = st;
+            lastSyncMsg = msg || '';
             if (st !== prev || st !== 'ok') setTimeout(updateSyncPill, 0);
             const c = SYNC_STYLE[st] || SYNC_STYLE.off;
             const dot = document.getElementById('syncDot'), icon = document.getElementById('syncIcon'), box = document.getElementById('syncStatus');
@@ -3531,11 +3533,12 @@ function authOk_(b) {
             clearTimeout(pillTimer);
             const st = syncState;
             if (!syncConfigured() || st === 'off') { el.classList.add('hidden'); return; }
-            const map = {
-                busy:  ['bg-amber-500', '<i class="fa-solid fa-rotate fa-spin mr-1.5"></i>Đang lưu lên Google Sheet… đừng đóng trang'],
-                dirty: ['bg-amber-500', '<i class="fa-solid fa-clock mr-1.5"></i>Chờ lưu lên Google Sheet…'],
-                err:   ['bg-rose-600', '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Chưa lưu được lên Google Sheet · bấm để xem'],
-                ok:    ['bg-emerald-600', '<i class="fa-solid fa-check mr-1.5"></i>Đã lưu lên Google Sheet']
+            const where = FB_MODE ? 'Firebase' : 'Google Sheet';
+            const map = {   // nhãn ghi đúng việc đang làm (lưu Firebase / chuyển ảnh sang Drive / lưu Google Sheet)
+                busy:  ['bg-amber-500', '<i class="fa-solid fa-rotate fa-spin mr-1.5"></i>' + esc(lastSyncMsg || ('Đang lưu lên ' + where + '…'))],
+                dirty: ['bg-amber-500', '<i class="fa-solid fa-clock mr-1.5"></i>Đang lưu…'],
+                err:   ['bg-rose-600', '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Chưa lưu được lên ' + where + ' · bấm để xem'],
+                ok:    ['bg-emerald-600', '<i class="fa-solid fa-check mr-1.5"></i>Đã lưu lên ' + where]
             };
             const [bg, html] = map[st] || map.ok;
             el.className = `fixed left-1/2 -translate-x-1/2 bottom-[calc(76px+env(safe-area-inset-bottom))] md:bottom-5 z-[45] ${bg} text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg cursor-pointer whitespace-nowrap`;
